@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leadoff Lounge 2026 — Live Ops Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0D1F3C; --navy-mid:#162d52; --navy-light:#1e3d6e;
+  --green:#1a7a47; --green-light:#d1fae5; --green-text:#065f3c;
+  --amber:#d97706; --amber-light:#fef3c7; --amber-text:#92400e;
+  --red:#dc2626; --red-light:#fee2e2; --red-text:#991b1b;
+  --blue:#1d4ed8; --blue-light:#dbeafe; --blue-text:#1e3a8a;
+  --gray:#6b7280; --gray-light:#f3f4f6; --gray-border:#e5e7eb;
+  --text:#111827; --text-muted:#6b7280;
+  --fb:#1a7a47; --inv:#b45309; --mkt:#6d28d9; --gx:#1d4ed8; --vol:#be185d;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:#f8f9fb;color:var(--text);font-size:15px;}
+
+.site-header{background:var(--navy);color:white;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--navy-light);flex-wrap:wrap;gap:10px;}
+.header-brand h1{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.02em;}
+.header-brand p{font-size:12px;color:rgba(255,255,255,0.45);margin-top:1px;}
+.header-stats{display:flex;gap:24px;align-items:center;}
+.hstat{text-align:center;}
+.hstat-n{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1;}
+.hstat-l{font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+
+.status-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 24px;font-size:11px;}
+.live-dot{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.4);}
+.live-dot span{width:7px;height:7px;border-radius:50%;background:#6b7280;display:inline-block;transition:background 0.3s;}
+.live-dot.connected span{background:#4ade80;box-shadow:0 0 6px #4ade8088;}
+.live-dot.connected{color:#4ade80;}
+.bar-actions{display:flex;gap:6px;}
+.bar-btn{background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.55);font-size:11px;font-family:'Barlow',sans-serif;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all 0.15s;}
+.bar-btn:hover{background:rgba(255,255,255,0.1);color:white;}
+.bar-btn.danger:hover{border-color:rgba(255,100,100,0.5);color:rgba(255,120,120,0.9);}
+
+.nav-tabs{display:flex;padding:0 24px;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:10px 18px;border-bottom:3px solid transparent;cursor:pointer;color:rgba(255,255,255,0.4);white-space:nowrap;transition:all 0.15s;user-select:none;}
+.nav-tab:hover{color:rgba(255,255,255,0.7);}
+.nav-tab.active{color:white;border-bottom-color:#4ade80;}
+
+.loading-screen{position:fixed;inset:0;background:var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;color:white;gap:16px;}
+.loading-screen h2{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:600;}
+.loading-screen p{font-size:13px;color:rgba(255,255,255,0.4);}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.15);border-top-color:#4ade80;border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.setup-screen{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:998;padding:24px;}
+.setup-card{background:white;border-radius:12px;padding:28px;max-width:540px;width:100%;}
+.setup-card h2{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px;}
+.setup-card p{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;}
+.setup-card pre{background:#f3f4f6;border-radius:6px;padding:14px;font-size:11px;overflow-x:auto;margin-bottom:16px;line-height:1.6;}
+.setup-card button{background:var(--navy);color:white;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:14px;cursor:pointer;}
+
+.main{padding:24px;max-width:1100px;margin:0 auto;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:24px;}
+.ov-card{background:white;border:1px solid var(--gray-border);border-radius:10px;padding:16px;cursor:pointer;transition:all 0.15s;}
+.ov-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.ov-card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.ov-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.ov-name{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
+.ov-chair{font-size:12px;color:var(--text-muted);margin-bottom:10px;}
+.progress-bar{height:5px;background:var(--gray-light);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+.ov-pct{font-size:11px;color:var(--text-muted);margin-top:4px;}
+
+.alerts-section{margin-bottom:24px;}
+.alerts-section h2{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:10px;}
+.alert{border-radius:8px;padding:11px 14px;margin-bottom:7px;font-size:13px;line-height:1.5;border-left:3px solid;}
+.alert-red{background:var(--red-light);color:var(--red-text);border-color:var(--red);}
+.alert-amber{background:var(--amber-light);color:var(--amber-text);border-color:var(--amber);}
+.alert-blue{background:var(--blue-light);color:var(--blue-text);border-color:var(--blue);}
+.alert-green{background:var(--green-light);color:var(--green-text);border-color:var(--green);}
+.alert strong{font-weight:600;}
+
+.section-head{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;}
+.add-btn{font-size:11px;padding:3px 10px;border:1px solid var(--gray-border);border-radius:4px;background:white;cursor:pointer;color:var(--text-muted);font-family:'Barlow',sans-serif;transition:all 0.15s;text-transform:none;letter-spacing:0;}
+.add-btn:hover{border-color:#9ca3af;color:var(--text);}
+
+.committee-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--gray-border);}
+.committee-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+.committee-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.02em;}
+.committee-sub{font-size:13px;color:var(--text-muted);margin-top:2px;}
+
+.inv-wrap{background:white;border:1px solid var(--gray-border);border-radius:10px;overflow:hidden;margin-bottom:4px;}
+.inv-table{width:100%;border-collapse:collapse;font-size:13px;}
+.inv-table thead tr{background:var(--gray-light);}
+.inv-table th{text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);padding:8px 12px;white-space:nowrap;}
+.inv-table td{padding:9px 12px;border-top:1px solid var(--gray-border);vertical-align:middle;}
+.inv-table tbody tr:hover td{background:#fafafa;}
+.inv-table tr.row-sourced td{background:#f0fdf4;}
+.inv-table tr.row-donated td{background:#eff6ff;}
+.inv-table tr.row-attention td{background:#fff7ed;}
+
+.inv-table input[type=text]{border:1px solid transparent;background:transparent;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text);outline:none;padding:3px 5px;border-radius:4px;width:100%;}
+.inv-table input[type=text]:hover{border-color:var(--gray-border);}
+.inv-table input[type=text]:focus{border-color:#93c5fd;background:white;box-shadow:0 0 0 2px rgba(147,197,253,0.3);}
+.inv-table input.name-input{font-weight:500;}
+.inv-table input.qty-input{width:130px;}
+.inv-table input.note-input{color:var(--text-muted);}
+.inv-table input.note-input:focus{color:var(--text);}
+
+.status-sel{font-family:'Barlow',sans-serif;font-size:11px;font-weight:500;padding:3px 20px 3px 8px;border-radius:20px;border:1px solid;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
+.s-tbd{background:#f3f4f6;color:#374151;border-color:#d1d5db;}
+.s-sourced{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
+.s-donated{background:#dbeafe;color:#1e3a8a;border-color:#93c5fd;}
+.s-attention{background:#ffedd5;color:#9a3412;border-color:#fdba74;}
+
+.del-btn{background:none;border:none;color:#d1d5db;cursor:pointer;font-size:18px;line-height:1;padding:0 4px;border-radius:3px;transition:all 0.1s;}
+.del-btn:hover{color:var(--red);background:var(--red-light);}
+
+.flash{animation:flash-anim 1s ease;}
+@keyframes flash-anim{0%,100%{background:inherit;}50%{background:#fef9c3;}}
+
+.resp-list{display:flex;flex-direction:column;gap:8px;}
+.resp-item{background:white;border:1px solid var(--gray-border);border-radius:8px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;transition:opacity 0.2s;}
+.resp-item.done{opacity:0.45;}
+.resp-item.done .resp-title{text-decoration:line-through;}
+.resp-checkbox{width:16px;height:16px;margin-top:2px;cursor:pointer;flex-shrink:0;accent-color:var(--green);}
+.resp-body{flex:1;}
+.resp-title{font-size:13px;font-weight:500;color:var(--text);}
+.resp-note{font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;}
+
+@media(max-width:640px){
+  .main{padding:16px;}
+  .header-stats{gap:14px;}
+  .hstat-n{font-size:18px;}
+  .overview-grid{grid-template-columns:1fr 1fr;}
+  .inv-table input.qty-input{width:80px;}
+}
+@media print{
+  .site-header{position:static!important;}
+  .panel{display:block!important;}
+  .del-btn,.add-btn,.bar-actions,.nav-tabs{display:none;}
+  body{background:white;}
+}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <h2>Leadoff Lounge 2026</h2>
+  <p id="loadingMsg">Connecting to live database…</p>
+</div>
+
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-card">
+    <h2>One-time database setup</h2>
+    <p>Run this SQL in your Supabase project → SQL Editor → New Query, then reload this page.</p>
+    <pre id="setupSql"></pre>
+    <button onclick="document.getElementById('setupScreen').style.display='none';location.reload()">Done — reload</button>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-brand">
+      <h1>⚾ Leadoff Lounge 2026</h1>
+      <p>College World Series · Hot Shops · Omaha, NE · Live shared dashboard</p>
+    </div>
+    <div class="header-stats">
+      <div class="hstat"><div class="hstat-n" id="countdown">—</div><div class="hstat-l">Days out</div></div>
+      <div class="hstat"><div class="hstat-n">June 12–13</div><div class="hstat-l">Event dates</div></div>
+      <div class="hstat"><div class="hstat-n">1,000+</div><div class="hstat-l">Expected guests</div></div>
+      <div class="hstat"><div class="hstat-n">13</div><div class="hstat-l">Sponsors</div></div>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="live-dot" id="liveDot"><span></span><span id="liveLabel">Connecting…</span></div>
+    <div class="bar-actions">
+      <button class="bar-btn" onclick="window.print()">Print</button>
+      <button class="bar-btn danger" onclick="resetAll()">Reset to defaults</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showPanel('overview')">Overview</div>
+    <div class="nav-tab" onclick="showPanel('fb')">Food & Bev</div>
+    <div class="nav-tab" onclick="showPanel('inv')">Inventory</div>
+    <div class="nav-tab" onclick="showPanel('mkt')">Marketing</div>
+    <div class="nav-tab" onclick="showPanel('gx')">Guest Exp.</div>
+    <div class="nav-tab" onclick="showPanel('vol')">Volunteers</div>
+  </div>
+</header>
+
+<main class="main">
+
+<div class="panel active" id="panel-overview">
+  <div class="overview-grid" id="overviewGrid"></div>
+  <div class="alerts-section">
+    <h2>Flags & critical items</h2>
+    <div class="alert alert-red"><strong>Vodka lemonade ran out in 2025</strong> — 60 gal used on two perfect weather days. Budget more for 2026 with higher attendance expected.</div>
+    <div class="alert alert-red"><strong>Extension cord layout not done before 2025 setup day</strong> — caused the team to miss the 11am readiness target. Must be finalized Thursday night. Coordinate with Dan Tober (Hot Shops).</div>
+    <div class="alert alert-amber"><strong>Burger/dog count is an estimate</strong> — tracking failed in 2025 due to unplanned urgent Friday run. Establish firm counts this year.</div>
+    <div class="alert alert-amber"><strong>City parking enforcement stricter in 2026</strong> — no chairs/tables in 13th St spaces or sidewalk. 3-hour parking limit enforced. Arrive by 7:30am to block spots.</div>
+    <div class="alert alert-amber"><strong>Larson Supply wish list due April 15</strong> — two days before the April 17 meeting. Slater is submitting. All committees finalize requests before then.</div>
+    <div class="alert alert-blue"><strong>MBJ expressed interest as Media Sponsor</strong> — 50 Mile March angle. Blake is point person. Finalize before April 17.</div>
+    <div class="alert alert-blue"><strong>LL Jerseys are a 2026 first</strong> — for sponsors + volunteers (~45+ pieces). If through Merch Club, start production timeline now.</div>
+    <div class="alert alert-green"><strong>Volunteer recruitment already underway</strong> — Jodi & Connor recruiting via 50 Mile March. Intent is charity provides most/all of the 32 slots.</div>
+  </div>
+  <div class="section-head">Key dates</div>
+  <div class="inv-wrap">
+    <table class="inv-table">
+      <thead><tr><th style="width:160px">Date</th><th>Milestone</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600">Now → Apr 16</td><td>Committee Zoom calls — build inventory wish lists</td><td>All chairs</td></tr>
+        <tr><td style="font-weight:600;color:var(--amber)">April 15</td><td>Submit combined wish list to Larson Supply</td><td>Slater</td></tr>
+        <tr><td style="font-weight:600;color:var(--blue)">April 17</td><td>Full steering committee — FranNet office</td><td>All 13</td></tr>
+        <tr><td style="font-weight:600">May 1</td><td>Thank-you email to 2025 registrants with 2026 reg link</td><td>Guest Exp.</td></tr>
+        <tr><td style="font-weight:600;color:var(--green)">June 11</td><td>Thursday setup — extension cords, chairs staged in loading dock</td><td>Inventory / GX</td></tr>
+        <tr><td style="font-weight:600;color:var(--red)">June 12–13</td><td>Leadoff Lounge 2026 — 4 shifts, 1,000+ guests</td><td>All</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel" id="panel-fb">
+  <div class="committee-header"><div class="committee-dot" style="background:var(--fb)"></div><div><div class="committee-title">Food & Beverage Supply</div><div class="committee-sub">Chair: Marty McGuire · Dean Peterson · Matt Walch · Tom Clements / Vis Major · <em>Excludes beer sponsor supplies</em></div></div></div>
+  <div class="section-head">Inventory <button class="add-btn" onclick="addItem('fb')">+ Add item</button></div>
+  <div class="inv-wrap"><table class="inv-table" id="tbl-fb"><thead><tr><th style="width:26%">Item</th><th style="width:15%">Quantity</th><th style="width:15%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="section-head">Responsibilities</div>
+  <div class="resp-list" id="resp-fb"></div>
+</div>
+
+<div class="panel" id="panel-inv">
+  <div class="committee-header"><div class="committee-dot" style="background:var(--inv)"></div><div><div class="committee-title">General Inventory & Supply</div><div class="committee-sub">Inventory Czar: James Mackiewicz · Regi Powell</div></div></div>
+  <div class="section-head">Inventory <button class="add-btn" onclick="addItem('inv')">+ Add item</button></div>
+  <div class="inv-wrap"><table class="inv-table" id="tbl-inv"><thead><tr><th style="width:26%">Item</th><th style="width:15%">Quantity</th><th style="width:15%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="section-head">Responsibilities</div>
+  <div class="resp-list" id="resp-inv"></div>
+</div>
+
+<div class="panel" id="panel-mkt">
+  <div class="committee-header"><div class="committee-dot" style="background:var(--mkt)"></div><div><div class="committee-title">Marketing & Swag</div><div class="committee-sub">Chair: Slater · Jason Olsen · Chris Harwood</div></div></div>
+  <div class="section-head">Inventory <button class="add-btn" onclick="addItem('mkt')">+ Add item</button></div>
+  <div class="inv-wrap"><table class="inv-table" id="tbl-mkt"><thead><tr><th style="width:26%">Item</th><th style="width:15%">Quantity</th><th style="width:15%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="section-head">Responsibilities</div>
+  <div class="resp-list" id="resp-mkt"></div>
+</div>
+
+<div class="panel" id="panel-gx">
+  <div class="committee-header"><div class="committee-dot" style="background:var(--gx)"></div><div><div class="committee-title">Guest Experience</div><div class="committee-sub">Chair: Blake Martin · Chris Slater · Chris Harwood · Will Cumming · Rochelle Eigste</div></div></div>
+  <div class="section-head">Inventory <button class="add-btn" onclick="addItem('gx')">+ Add item</button></div>
+  <div class="inv-wrap"><table class="inv-table" id="tbl-gx"><thead><tr><th style="width:26%">Item</th><th style="width:15%">Quantity</th><th style="width:15%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="section-head">Responsibilities</div>
+  <div class="resp-list" id="resp-gx"></div>
+</div>
+
+<div class="panel" id="panel-vol">
+  <div class="committee-header"><div class="committee-dot" style="background:var(--vol)"></div><div><div class="committee-title">Volunteer Operations</div><div class="committee-sub">Chair: Connor Kavulak · Jodi Teal · Blake Martin</div></div></div>
+  <div class="alert alert-green" style="margin-bottom:16px;"><strong>Recruitment underway.</strong> 50 Mile March (2026 beneficiary) intended to provide most/all of the ~32 volunteers across 4 shifts.</div>
+  <div class="section-head">Responsibilities</div>
+  <div class="resp-list" id="resp-vol"></div>
+</div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = 'https://lcqevefzbotmxtjbpgvl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjcWV2ZWZ6Ym90bXh0amJwZ3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDkzMTMsImV4cCI6MjA5MTA4NTMxM30.cudkKvAsddpVCPdXrstDeZfR2VqA9Vx8nLuQVUZZD80';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Local cache ──
+let items = []; // all items from DB
+let resps = []; // all resps from DB
+let focusedId = null; // UUID of currently-edited row — skip re-render
+
+// ── Default seed data ──
+const SEED_ITEMS = [
+  // Food & Bev
+  {committee:'fb',name:'Ice',qty:'25 bags (24 lb)',status:'tbd',note:'Coordinate with Dean — consider delivery for 2026. Have on-site by 9am both days.',sort_order:1},
+  {committee:'fb',name:'Vodka Lemonade',qty:'60+ gallons',status:'attention',note:'60 gal used in 2025, RAN OUT at 8pm Saturday. Increase for 2026.',sort_order:2},
+  {committee:'fb',name:'Beer – Leadoff Lager (Vis Major)',qty:'7+ kegs',status:'tbd',note:'Vis Major sourcing. 7 kegs got very low in 2025. Coordinate timing only.',sort_order:3},
+  {committee:'fb',name:'Pork Butts',qty:'23',status:'tbd',note:'9 day 1 + 10 day 2 in 2025. Adding 4 more = 23 total for 2026.',sort_order:4},
+  {committee:'fb',name:'Pickles',qty:'6 jars (start)',status:'tbd',note:'Huge hit. 4 large Costco/Sam\'s jars per day. Start with 6, restock day 2 if needed.',sort_order:5},
+  {committee:'fb',name:'Onions (prepped & chopped)',qty:'TBD',status:'tbd',note:'More popular than expected. Pre-chop — took too long in 2025.',sort_order:6},
+  {committee:'fb',name:'Burgers',qty:'400?',status:'attention',note:'Estimate only — tracking failed in 2025 due to unplanned Friday run. Nail this.',sort_order:7},
+  {committee:'fb',name:'Hot Dogs',qty:'400?',status:'attention',note:'Same tracking issue as burgers. Confirm count before event.',sort_order:8},
+  {committee:'fb',name:'Buns (burger + dog)',qty:'Match meat qty',status:'tbd',note:'',sort_order:9},
+  {committee:'fb',name:'Cheese',qty:'TBD',status:'tbd',note:'',sort_order:10},
+  {committee:'fb',name:'Ketchup & Mustard',qty:'TBD',status:'tbd',note:'Squeezable, labeled bottles',sort_order:11},
+  {committee:'fb',name:'BBQ Sauce',qty:'TBD',status:'tbd',note:'Squeezable, labeled bottles',sort_order:12},
+  {committee:'fb',name:'Water',qty:'TBD',status:'tbd',note:'',sort_order:13},
+  {committee:'fb',name:'Pop / Sodas',qty:'TBD',status:'tbd',note:'',sort_order:14},
+  {committee:'fb',name:'Chips / Snacks',qty:'TBD',status:'tbd',note:'',sort_order:15},
+  {committee:'fb',name:'Cups',qty:'TBD',status:'tbd',note:'Jason Olsen has ~250 leftover 2025 hard shell Solo cups — check before ordering.',sort_order:16},
+  {committee:'fb',name:'Plates',qty:'TBD',status:'tbd',note:'',sort_order:17},
+  {committee:'fb',name:'Plasticware',qty:'3 large boxes',status:'tbd',note:'Blake brought 3 huge boxes (forks, knives, spoons) in 2025 — seemed sufficient.',sort_order:18},
+  {committee:'fb',name:'Grill prep table',qty:'1',status:'tbd',note:'Stainless steel from Hot Shops — worked perfectly in 2025.',sort_order:19},
+  {committee:'fb',name:'Grill utensils',qty:'2 of each',status:'tbd',note:'Spatula, tongs, brush/baster, knives',sort_order:20},
+  {committee:'fb',name:'Chafing dishes (flip-up lids)',qty:'TBD',status:'tbd',note:'Menu signs in front of each.',sort_order:21},
+  {committee:'fb',name:'Disposable grill pans',qty:'TBD',status:'tbd',note:'',sort_order:22},
+  {committee:'fb',name:'Condiment tray & tongs',qty:'TBD',status:'tbd',note:'For pickles, onions, etc.',sort_order:23},
+  {committee:'fb',name:'Slow cookers',qty:'Several',status:'tbd',note:'',sort_order:24},
+  {committee:'fb',name:'Hot pads',qty:'TBD',status:'tbd',note:'One per hot dish + extras for grill masters',sort_order:25},
+  {committee:'fb',name:'Wet wipes',qty:'TBD',status:'tbd',note:'',sort_order:26},
+  {committee:'fb',name:'Serving utensils',qty:'TBD',status:'tbd',note:'',sort_order:27},
+  {committee:'fb',name:'Charcoal / Pellets / Lighter fluid',qty:'TBD',status:'tbd',note:'',sort_order:28},
+  {committee:'fb',name:'Serving gloves',qty:'TBD',status:'tbd',note:'',sort_order:29},
+  {committee:'fb',name:'Meat handling gloves',qty:'TBD',status:'tbd',note:'',sort_order:30},
+  // Inventory
+  {committee:'inv',name:'6-foot tables',qty:'2–3',status:'tbd',note:'Hot Shops didn\'t have 6\' tables in prior years — coordinate with Food/Bev.',sort_order:1},
+  {committee:'inv',name:'8-foot tables',qty:'TBD',status:'tbd',note:'Hot Shops provides these.',sort_order:2},
+  {committee:'inv',name:'Chairs',qty:'~20',status:'tbd',note:'Source from Hot Shops. Stage in loading dock Thursday night.',sort_order:3},
+  {committee:'inv',name:'Water misters',qty:'2–3',status:'tbd',note:'Self-contained units for hottest days? TBD.',sort_order:4},
+  {committee:'inv',name:'Coolers / Swamp Cooler',qty:'TBD',status:'tbd',note:'Have owners take home nightly. Regi checking on Swamp Cooler as of 3/27.',sort_order:5},
+  {committee:'inv',name:'Tents',qty:'7 total',status:'tbd',note:'2 big carports (Matt); 2 10x10 (band + sidewalk/merch); 3 12x12 in front of carports (one = new LL branded canopy).',sort_order:6},
+  {committee:'inv',name:'5-gal buckets + straps/bungees',qty:'4 per tent',status:'tbd',note:'Blake has buckets. Fill via hose in loading dock. Strap to tent legs as anchors.',sort_order:7},
+  {committee:'inv',name:'Sun sails',qty:'2–3',status:'tbd',note:'Helped fill sun gaps in 2025.',sort_order:8},
+  {committee:'inv',name:'TVs',qty:'TBD',status:'tbd',note:'Consider one over wood rail under trees and/or in loading dock.',sort_order:9},
+  {committee:'inv',name:'Cornhole & games',qty:'2 cornhole sets',status:'tbd',note:'Used consistently throughout 2025.',sort_order:10},
+  {committee:'inv',name:'Extension cords',qty:'Many',status:'attention',note:'CRITICAL: Map full layout before Thursday. Pull from 2 loading dock spots + 1 exterior. Coordinate with Dan Tober (Hot Shops).',sort_order:11},
+  {committee:'inv',name:'Bungees & rope',qty:'TBD',status:'tbd',note:'CWS = potential hurricane winds. Be overprepared.',sort_order:12},
+  {committee:'inv',name:'Trash can liners',qty:'Hundreds',status:'tbd',note:'Varying sizes. Confirm Hot Shops has enough trash cans again.',sort_order:13},
+  {committee:'inv',name:'Trash can rubber bands',qty:'TBD',status:'tbd',note:'',sort_order:14},
+  {committee:'inv',name:'Cooling towels',qty:'TBD',status:'tbd',note:'',sort_order:15},
+  {committee:'inv',name:'Disposable table covers',qty:'TBD',status:'tbd',note:'',sort_order:16},
+  {committee:'inv',name:'Duct tape & painters tape',qty:'TBD',status:'tbd',note:'',sort_order:17},
+  {committee:'inv',name:'Team banners',qty:'1 per CWS team',status:'tbd',note:'Hang at front entrance once field is set.',sort_order:18},
+  {committee:'inv',name:'Sunscreen',qty:'TBD',status:'tbd',note:'',sort_order:19},
+  {committee:'inv',name:'Tip jars',qty:'TBD',status:'tbd',note:'',sort_order:20},
+  {committee:'inv',name:'Signs (coord. w/ Marketing)',qty:'See Marketing tab',status:'tbd',note:'Welcome Banner; Sponsor Banner; Private Event 18x24; Donation Poster; Restroom 24x24; 2x Venmo easel backs.',sort_order:21},
+  // Marketing
+  {committee:'mkt',name:'Sponsor logo banner',qty:'2–3',status:'tbd',note:'Double-sided. Multiple copies. All 13 sponsor logos.',sort_order:1},
+  {committee:'mkt',name:'LL Jerseys',qty:'TBD',status:'attention',note:'Baseball jerseys for all sponsors + volunteers (~45+ pieces). Merch Club opportunity. Decide at April 17.',sort_order:2},
+  {committee:'mkt',name:'Sponsor badges',qty:'1 per sponsor',status:'tbd',note:'2026 enhancement. May be redundant if jerseys adopted — decide as group.',sort_order:3},
+  {committee:'mkt',name:'LL Branded tent',qty:'1',status:'tbd',note:'Front-and-center at arrival. Coordinate placement with Inventory committee.',sort_order:4},
+  {committee:'mkt',name:'Swag (LL-branded + sponsor)',qty:'TBD',status:'tbd',note:'Open question: all 13 sponsors bring their own, or limited to LL / Vis Major / Hot Shops / Band / Larson?',sort_order:5},
+  {committee:'mkt',name:'Welcome Banner',qty:'1',status:'tbd',note:'',sort_order:6},
+  {committee:'mkt',name:'Private Event Signs',qty:'TBD',status:'tbd',note:'18x24 format',sort_order:7},
+  {committee:'mkt',name:'Donation Poster',qty:'TBD',status:'tbd',note:'50 Mile March',sort_order:8},
+  {committee:'mkt',name:'Restroom Signs',qty:'TBD',status:'tbd',note:'24x24 format',sort_order:9},
+  {committee:'mkt',name:'Venmo easel backs',qty:'2',status:'tbd',note:'One for LL, one for Hot Shops',sort_order:10},
+  {committee:'mkt',name:'QR code signage',qty:'TBD',status:'tbd',note:'Links to sponsor website',sort_order:11},
+  // Guest Experience
+  {committee:'gx',name:'Laptops for check-in',qty:'2',status:'tbd',note:'Upgraded from paper-driven flow in 2025.',sort_order:1},
+  {committee:'gx',name:'Extension cords for laptops',qty:'2 × 50 ft',status:'tbd',note:'One per laptop.',sort_order:2},
+  {committee:'gx',name:'Paper sign-in sheets',qty:'5 pages',status:'tbd',note:'Backup in case of power, internet, or weather failure.',sort_order:3},
+  {committee:'gx',name:'Shift assignment lists',qty:'2 copies',status:'tbd',note:'Printed list of who handles what on each of 4 shifts. Have ready each day.',sort_order:4},
+  {committee:'gx',name:'Clipboards',qty:'3',status:'tbd',note:'For blank sign-in sheets and printed Eventbrite check-in lists.',sort_order:5},
+  {committee:'gx',name:'Pens & Sharpies',qty:'10 of each',status:'tbd',note:'',sort_order:6},
+  {committee:'gx',name:'A-frame signs',qty:'2',status:'tbd',note:'13th & Nicholas corner + 13th & Izard corner. Arrow toward entrance. Coord. w/ Marketing.',sort_order:7},
+  {committee:'gx',name:'Band entrance block',qty:'TBD',status:'tbd',note:'Non-registrants may have entered via band entrance in 2025. Block physically in 2026.',sort_order:8},
+  {committee:'gx',name:'Swag',qty:'TBD',status:'tbd',note:'LL-branded + sponsor-specific. Coord. w/ Marketing on scope.',sort_order:9},
+];
+
+const SEED_RESPS = [
+  {committee:'fb',title:'Confirm Dean Peterson as TV guy',note:'Dean also handles AV/TV coordination per prior year role.',done:false,sort_order:1},
+  {committee:'fb',title:'Identify and confirm 2 Grill Masters',note:'One grilling, one prepping — cleaning utensils, refilling sauce, getting meat ready during rush periods.',done:false,sort_order:2},
+  {committee:'fb',title:'Coordinate ice logistics with Dean',note:'Consider arranging delivery for 2026 so we have plenty by 9am both days.',done:false,sort_order:3},
+  {committee:'fb',title:'Set firm burger/dog count before event',note:'Do not rely on 2025 estimate — tracking failed due to unplanned Friday run.',done:false,sort_order:4},
+  {committee:'inv',title:'Coordinate with Larson Supply — wish list due April 15',note:'Submit combined list from all committees. Slater is the Larson contact. Goal: maximize donation.',done:false,sort_order:1},
+  {committee:'inv',title:'Finalize extension cord layout — Thursday before event',note:'Full cord configuration done Thursday night. Root cause of 2025 readiness failure. Coordinate with Dan Tober on Hot Shops power sources.',done:false,sort_order:2},
+  {committee:'inv',title:'Confirm trash can supply with Hot Shops',note:'Hot Shops provided enough in 2024 & 2025 — reconfirm for 2026.',done:false,sort_order:3},
+  {committee:'inv',title:'Regi to update on Swamp Cooler status',note:'Was checking as of 3/27 meeting.',done:false,sort_order:4},
+  {committee:'mkt',title:'Finalize swag scope decision',note:'All 13 sponsors or limited to LL / Vis Major / Hot Shops / Band / Larson? Decide at April 17.',done:false,sort_order:1},
+  {committee:'mkt',title:'Source Media Sponsor (MBJ)',note:'MBJ interested. Blake is point person. Emphasize 50 Mile March angle. Finalize before April 17.',done:false,sort_order:2},
+  {committee:'mkt',title:'Assign event photographer/videographer',note:'Likely a committee member. Brief them on key moments to capture.',done:false,sort_order:3},
+  {committee:'mkt',title:'Submit combined inventory list to Larson Supply by April 15',note:'Slater is the Larson contact. Compile swag/signage from Marketing + all other committees.',done:false,sort_order:4},
+  {committee:'mkt',title:'Drive network promotion across all 13 sponsors',note:'Everyone promotes. Goal: meaningfully exceed 1,270 registrants from 2025.',done:false,sort_order:5},
+  {committee:'mkt',title:'Create QR code linked to sponsor website',note:'Deploy on signage at event.',done:false,sort_order:6},
+  {committee:'mkt',title:'Finalize LL Jersey decision and initiate production',note:'~45+ pieces for sponsors + volunteers. Decide at April 17 and order immediately if proceeding.',done:false,sort_order:7},
+  {committee:'gx',title:'Design full event layout before Thursday setup',note:'Everyone must know what goes where before arriving. Can use loading dock + concrete west of traditional space. No tables/chairs in 13th St spaces or sidewalk.',done:false,sort_order:1},
+  {committee:'gx',title:'Create indoor/weather fallback plan',note:'TV, chairs, tables, backup supplies. Coordinate rapid food transfer plan with Food committee.',done:false,sort_order:2},
+  {committee:'gx',title:'Block parking by 7:30am both days',note:'~2 spots east and west of loading dock on 13th. Confirm viability weeks ahead.',done:false,sort_order:3},
+  {committee:'gx',title:'Upgrade check-in to 2-laptop system',note:'Replacing paper-driven flow from 2025. Decide whether to require separate email per attendee.',done:false,sort_order:4},
+  {committee:'gx',title:'Launch Eventbrite with unique URL by March 1',note:'Forward URL to Marketing Chair. Review registrant privacy settings — wasn\'t fully private in 2025.',done:false,sort_order:5},
+  {committee:'gx',title:'Ensure all entry points capture name & email',note:'Police all entrances. Deny non-registrants until verified by a named LL sponsor. Block band entrance.',done:false,sort_order:6},
+  {committee:'gx',title:'Send thank-you email to 2025 registrants by May 1',note:'\'Thanks, and reserve your spot for 2026.\' Include registration QR and URL.',done:false,sort_order:7},
+  {committee:'gx',title:'Coordinate the band (J&L repeat)',note:'Confirm 2025 band for 2026. Handle power coordination and any band-requested giveaways.',done:false,sort_order:8},
+  {committee:'gx',title:'Arrange Hot Shops tours',note:'Encourage self-tours and/or docent-led tours. Contact co-founder Tim Barry (semi-retired) as potential lead.',done:false,sort_order:9},
+  {committee:'gx',title:'Explore in-kind security arrangement',note:'Hot Shops has a security company. Confirm viability for Leadoff Lounge.',done:false,sort_order:10},
+  {committee:'gx',title:'Create parking map for Eventbrite',note:'Digital map on registration page and/or confirmation emails. Coordinate with Hot Shops, City, Makerhood.',done:false,sort_order:11},
+  {committee:'vol',title:'Recruit 8 volunteers per shift × 4 shifts (32 total)',note:'Primary source: 50 Mile March beneficiary. Active recruitment in progress via Jodi & Connor.',done:false,sort_order:1},
+  {committee:'vol',title:'Define shift responsibilities',note:'Use prior year Sign Up Genius as reference. Populate Google Sheet with committee responsibilities.',done:false,sort_order:2},
+  {committee:'vol',title:'Brief arriving volunteers at each shift start',note:'Every volunteer knows their duties before shift begins. Printed shift lists handled by Guest Exp. committee.',done:false,sort_order:3},
+  {committee:'vol',title:'Confirm full coverage for all 4 shifts before May 1',note:'Both days, both shifts. Don\'t wait until June to find gaps.',done:false,sort_order:4},
+];
+
+// ── Render helpers ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function statusClass(s){return {tbd:'s-tbd',sourced:'s-sourced',donated:'s-donated',attention:'s-attention'}[s]||'s-tbd';}
+function rowClass(s){return {sourced:'row-sourced',donated:'row-donated',attention:'row-attention'}[s]||'';}
+
+function renderTable(committee) {
+  const tbl = document.querySelector('#tbl-'+committee+' tbody');
+  if(!tbl) return;
+  const rows = items.filter(i=>i.committee===committee).sort((a,b)=>a.sort_order-b.sort_order);
+  tbl.innerHTML = '';
+  rows.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.className = rowClass(item.status);
+    tr.dataset.id = item.id;
+    tr.innerHTML = `
+      <td><input class="name-input" type="text" value="${esc(item.name)}" placeholder="Item name"
+        onfocus="focusedId='${item.id}'" onblur="focusedId=null"
+        onchange="updateItemField('${item.id}','name',this.value)"></td>
+      <td><input class="qty-input" type="text" value="${esc(item.qty)}" placeholder="Qty"
+        onfocus="focusedId='${item.id}'" onblur="focusedId=null"
+        onchange="updateItemField('${item.id}','qty',this.value)"></td>
+      <td><select class="status-sel ${statusClass(item.status)}"
+        onchange="updateItemField('${item.id}','status',this.value);this.className='status-sel '+statusClass(this.value);this.closest('tr').className=rowClass(this.value);this.closest('tr').dataset.id='${item.id}'">
+        <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
+        <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
+        <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
+        <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
+      </select></td>
+      <td><input class="note-input" type="text" value="${esc(item.note)}" placeholder="Notes…"
+        onfocus="focusedId='${item.id}'" onblur="focusedId=null"
+        onchange="updateItemField('${item.id}','note',this.value)"></td>
+      <td><button class="del-btn" onclick="deleteItem('${item.id}')">×</button></td>`;
+    tbl.appendChild(tr);
+  });
+}
+
+function renderResps(committee) {
+  const container = document.getElementById('resp-'+committee);
+  if(!container) return;
+  const list = resps.filter(r=>r.committee===committee).sort((a,b)=>a.sort_order-b.sort_order);
+  container.innerHTML = '';
+  list.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'resp-item'+(r.done?' done':'');
+    div.dataset.id = r.id;
+    div.innerHTML = `
+      <input type="checkbox" class="resp-checkbox" ${r.done?'checked':''} onchange="toggleResp('${r.id}',this.checked)">
+      <div class="resp-body">
+        <div class="resp-title">${esc(r.title)}</div>
+        ${r.note?`<div class="resp-note">${esc(r.note)}</div>`:''}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function renderOverview() {
+  const grid = document.getElementById('overviewGrid');
+  const committees = [
+    {key:'fb',label:'Food & Bev',chair:'Marty McGuire',color:'var(--fb)'},
+    {key:'inv',label:'Inventory',chair:'James Mackiewicz',color:'var(--inv)'},
+    {key:'mkt',label:'Marketing',chair:'Slater',color:'var(--mkt)'},
+    {key:'gx',label:'Guest Exp.',chair:'Blake Martin',color:'var(--gx)'},
+    {key:'vol',label:'Volunteers',chair:'Connor Kavulak',color:'var(--vol)'}
+  ];
+  grid.innerHTML = '';
+  committees.forEach(c => {
+    const cResps = resps.filter(r=>r.committee===c.key);
+    const cItems = items.filter(i=>i.committee===c.key);
+    const taskDone = cResps.filter(r=>r.done).length;
+    const taskTotal = cResps.length;
+    const srcDone = cItems.filter(i=>i.status==='sourced'||i.status==='donated').length;
+    const srcTotal = cItems.length;
+    const pct = taskTotal>0?Math.round(taskDone/taskTotal*100):0;
+    const invPct = srcTotal>0?Math.round(srcDone/srcTotal*100):0;
+    const div = document.createElement('div');
+    div.className = 'ov-card';
+    div.onclick = ()=>showPanel(c.key);
+    div.innerHTML = `
+      <div class="ov-card-top"><div class="ov-dot" style="background:${c.color}"></div><div class="ov-name">${c.label}</div></div>
+      <div class="ov-chair">${c.chair}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Tasks: ${taskDone}/${taskTotal} complete</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="ov-pct">${pct}%</div>
+      ${srcTotal>0?`<div style="font-size:11px;color:var(--text-muted);margin-top:8px;margin-bottom:4px;">Items sourced: ${srcDone}/${srcTotal}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${invPct}%;background:${c.color};opacity:0.5"></div></div>`:''}`;
+    grid.appendChild(div);
+  });
+}
+
+function renderAll() {
+  ['fb','inv','mkt','gx','vol'].forEach(k => { renderTable(k); renderResps(k); });
+  renderOverview();
+}
+
+// ── DB operations ──
+const debounceTimers = {};
+function debounce(id, fn, ms=600) {
+  clearTimeout(debounceTimers[id]);
+  debounceTimers[id] = setTimeout(fn, ms);
+}
+
+async function updateItemField(id, field, value) {
+  const item = items.find(i=>i.id===id);
+  if(item) item[field] = value;
+  renderOverview();
+  debounce('item-'+id+'-'+field, async () => {
+    await sb.from('items').update({[field]:value}).eq('id',id);
+  });
+}
+
+async function toggleResp(id, done) {
+  const resp = resps.find(r=>r.id===id);
+  if(resp) resp.done = done;
+  const el = document.querySelector('[data-id="'+id+'"]');
+  if(el) { el.classList.toggle('done', done); if(done) el.querySelector('.resp-title').style.textDecoration='line-through'; else el.querySelector('.resp-title').style.textDecoration=''; }
+  renderOverview();
+  await sb.from('responsibilities').update({done}).eq('id',id);
+}
+
+async function addItem(committee) {
+  const maxOrder = Math.max(0, ...items.filter(i=>i.committee===committee).map(i=>i.sort_order));
+  const {data:newRow} = await sb.from('items').insert({committee,name:'',qty:'',status:'tbd',note:'',sort_order:maxOrder+1}).select().single();
+  if(newRow) {
+    items.push(newRow);
+    renderTable(committee);
+    // Focus new row name input
+    setTimeout(()=>{
+      const tbl = document.querySelector('#tbl-'+committee+' tbody');
+      const lastRow = tbl?.lastElementChild;
+      if(lastRow) lastRow.querySelector('input')?.focus();
+    },50);
+  }
+}
+
+async function deleteItem(id) {
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  items = items.filter(i=>i.id!==id);
+  renderTable(item.committee);
+  renderOverview();
+  await sb.from('items').delete().eq('id',id);
+}
+
+async function resetAll() {
+  if(!confirm('Reset ALL data to defaults? This will delete everything and cannot be undone.')) return;
+  await sb.from('items').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('responsibilities').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await seedData();
+}
+
+// ── Real-time ──
+function handleItemRT(payload) {
+  const {eventType, new:nr, old:or} = payload;
+  if(eventType==='INSERT' && nr) {
+    if(!items.find(i=>i.id===nr.id)) { items.push(nr); renderTable(nr.committee); renderOverview(); }
+  } else if(eventType==='UPDATE' && nr) {
+    const idx = items.findIndex(i=>i.id===nr.id);
+    if(idx!==-1) {
+      items[idx] = nr;
+      if(focusedId !== nr.id) {
+        const row = document.querySelector(`tr[data-id="${nr.id}"]`);
+        if(row) { row.className = rowClass(nr.status); row.animate([{background:'#fef9c3'},{background:''}],{duration:1000}); }
+        renderTable(nr.committee);
+      }
+      renderOverview();
+    }
+  } else if(eventType==='DELETE' && or) {
+    const committee = items.find(i=>i.id===or.id)?.committee;
+    items = items.filter(i=>i.id!==or.id);
+    if(committee) renderTable(committee);
+    renderOverview();
+  }
+}
+
+function handleRespRT(payload) {
+  const {eventType, new:nr, old:or} = payload;
+  if(eventType==='INSERT' && nr) {
+    if(!resps.find(r=>r.id===nr.id)) { resps.push(nr); renderResps(nr.committee); renderOverview(); }
+  } else if(eventType==='UPDATE' && nr) {
+    const idx = resps.findIndex(r=>r.id===nr.id);
+    if(idx!==-1) { resps[idx]=nr; renderResps(nr.committee); renderOverview(); }
+  } else if(eventType==='DELETE' && or) {
+    const committee = resps.find(r=>r.id===or.id)?.committee;
+    resps = resps.filter(r=>r.id!==or.id);
+    if(committee) renderResps(committee);
+    renderOverview();
+  }
+}
+
+function setLiveStatus(connected) {
+  const dot = document.getElementById('liveDot');
+  const label = document.getElementById('liveLabel');
+  if(connected) { dot.className='live-dot connected'; label.textContent='Live — changes sync instantly'; }
+  else { dot.className='live-dot'; label.textContent='Reconnecting…'; }
+}
+
+// ── Seed ──
+async function seedData() {
+  document.getElementById('loadingMsg').textContent = 'Loading default data…';
+  const chunkSize = 20;
+  for(let i=0;i<SEED_ITEMS.length;i+=chunkSize) {
+    await sb.from('items').insert(SEED_ITEMS.slice(i,i+chunkSize));
+  }
+  await sb.from('responsibilities').insert(SEED_RESPS);
+}
+
+// ── Init ──
+async function init() {
+  // Countdown
+  const diff = Math.max(0,Math.ceil((new Date('2026-06-12')-new Date())/86400000));
+  document.getElementById('countdown').textContent = diff;
+
+  // Load data
+  document.getElementById('loadingMsg').textContent = 'Loading data…';
+  const [{data:itemData,error:ie},{data:respData,error:re}] = await Promise.all([
+    sb.from('items').select('*').order('sort_order'),
+    sb.from('responsibilities').select('*').order('sort_order')
+  ]);
+
+  if(ie || re) {
+    // Likely tables don't exist yet
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('setupScreen').style.display='flex';
+    document.getElementById('setupSql').textContent = `create table items (
+  id uuid default gen_random_uuid() primary key,
+  committee text, name text default '', qty text default '',
+  status text default 'tbd', note text default '',
+  sort_order int default 0, created_at timestamptz default now()
+);
+create table responsibilities (
+  id uuid default gen_random_uuid() primary key,
+  committee text, title text default '', note text default '',
+  done boolean default false, sort_order int default 0,
+  created_at timestamptz default now()
+);
+alter table items enable row level security;
+alter table responsibilities enable row level security;
+create policy "public_all" on items for all using (true) with check (true);
+create policy "public_all" on responsibilities for all using (true) with check (true);
+alter publication supabase_realtime add table items;
+alter publication supabase_realtime add table responsibilities;`;
+    return;
+  }
+
+  if(itemData.length===0 && respData.length===0) {
+    await seedData();
+    const [{data:id2},{data:rd2}] = await Promise.all([
+      sb.from('items').select('*').order('sort_order'),
+      sb.from('responsibilities').select('*').order('sort_order')
+    ]);
+    items = id2||[]; resps = rd2||[];
+  } else {
+    items = itemData||[]; resps = respData||[];
+  }
+
+  renderAll();
+  document.getElementById('loadingScreen').style.display='none';
+
+  // Subscribe to real-time
+  sb.channel('db-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'items'}, handleItemRT)
+    .on('postgres_changes',{event:'*',schema:'public',table:'responsibilities'}, handleRespRT)
+    .subscribe(status => {
+      setLiveStatus(status==='SUBSCRIBED');
+    });
+}
+
+// ── Nav ──
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const map={overview:0,fb:1,inv:2,mkt:3,gx:4,vol:5};
+  if(map[id]!==undefined) document.querySelectorAll('.nav-tab')[map[id]].classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
