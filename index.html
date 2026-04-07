@@ -1082,7 +1082,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="mc" style="max-width:580px;">
     <div class="mc-body" style="padding-top:20px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;" id="SPM-title">Edit Sponsor</div>
+        <div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;" id="SPM-title">Edit Member</div>
         <button class="mc-close" style="position:static;background:var(--grl);color:var(--text);" onclick="closeSPM()">✕</button>
       </div>
       <div class="mrow">
@@ -1101,7 +1101,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
       <div class="mf"><label>Logo / headshot URL</label><input class="mi" id="SP-logo" type="text" placeholder="https://…"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
         <button class="btn btn-secondary" onclick="closeSPM()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveSponsor()">Save profile</button>
+        <button class="btn btn-primary" onclick="saveSponsor()">Save member</button>
       </div>
     </div>
   </div>
@@ -1140,7 +1140,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="nav" id="nav-main">
     <div class="nt active" onclick="gp('overview')">Overview</div>
     <div class="nt" onclick="gp('eventday')" id="nt-eventday">Event Day</div>
-    <div class="nt" onclick="gp('sponsors')">Sponsors</div>
+    <div class="nt" onclick="gp('sponsors')">Steering Committee</div>
     <div class="nt" onclick="gp('budget')">Budget</div>
     <div class="nt" onclick="gp('receipts')">Receipts</div>
     <div class="nt" onclick="gp('meetings')">Meetings</div>
@@ -1296,7 +1296,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div id="OV-mytasks"></div>
   <div class="sh">Task assignments</div>
   <div id="OV-assignments" style="margin-bottom:20px;"></div>
-  <div class="sh">Sponsors & cost sharing</div>
+  <div class="sh">Steering Committee & cost sharing</div>
   <div class="sp-grid" id="OV-sponsors"></div>
   <div class="sh">Committee progress</div>
   <div class="comm-grid" id="OV-committees"></div>
@@ -1386,10 +1386,10 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
 <!-- SPONSORS -->
 <div class="panel" id="panel-sponsors">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-    <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Sponsor Profiles</div>
-    <button class="btn btn-primary" onclick="openSPM(null)">+ Add sponsor</button>
+    <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Steering Committee</div>
+    <button class="btn btn-primary" onclick="openSPM(null)">+ Add member</button>
   </div>
-  <div class="al al-b" style="margin-bottom:16px;"><strong>Marketing video profiles.</strong> Fill in each profile to power the 2026 marketing campaign. Each profile will include: bio, services, client types, fun facts, and contact info.</div>
+  <div class="al al-b" style="margin-bottom:16px;"><strong>Steering Committee profiles.</strong> Each member represents a business sponsor and committee role. Keep bios and contact info current for the marketing campaign and committee coordination.</div>
   <div class="sp-profile-grid" id="SP-grid"></div>
 </div>
 
@@ -1443,7 +1443,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
       </label>
     </div>
     <select class="mi" id="RU-sponsor-m" style="font-size:13px;">
-      <option value="">Who's submitting this receipt?</option>
+      <option value="">Who's submitting? (Steering Committee member)</option>
     </select>
   </div>
 
@@ -1456,7 +1456,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
     <div class="pp-body">
       <div class="pp-hint" id="PP-hint">Make sure the receipt text is clear and well-lit before analyzing.</div>
       <div class="pp-sponsor-row">
-        <label>Who's submitting this receipt?</label>
+        <label>Who's submitting? (Steering Committee member)</label>
         <select class="mi" id="PP-sponsor" style="font-size:13px;">
           <option value="">— Select sponsor —</option>
         </select>
@@ -1923,7 +1923,52 @@ function giu(name){
   for(const[k,q]of IQ)if(lo.includes(k))return'https://source.unsplash.com/300x200/?'+encodeURIComponent(q);
   return'https://source.unsplash.com/300x200/?'+encodeURIComponent(name.split(' ').slice(0,3).join(' '));
 }
-const EM=[['vodka','🍋'],['lemonade','🍋'],['beer','🍺'],['pork','🥩'],['pickle','🥒'],['onion','🧅'],['hot dog','🌭'],['burger','🍔'],['bun','🍞'],['cheese','🧀'],['ketchup','🍅'],['mustard','🍯'],['bbq','🔥'],['water','💧'],['pop','🥤'],['soda','🥤'],['chip','🥨'],['cup','🥤'],['plate','🍽️'],['plasticware','🍴'],['grill','🔥'],['charcoal','🔥'],['chafing','🍲'],['tent','⛺'],['chair','🪑'],['table','🪵'],['cooler','❄️'],['cord','🔌'],['extension','🔌'],['trash','🗑️'],['banner','🚩'],['sunscreen','☀️'],['jersey','👕'],['badge','🏷️'],['swag','🎁'],['laptop','💻'],['ice','🧊'],['bucket','🪣'],];
+const EM=[
+  // ── FOOD & BEVERAGE (tailgate-specific) ──
+  ['hot dog','🌭'],['brat','🌭'],['bratwurst','🌭'],['sausage','🌭'],
+  ['burger','🍔'],['hamburger','🍔'],['slider','🍔'],
+  ['chicken','🍗'],['wing','🍗'],['wings','🍗'],
+  ['taco','🌮'],['chips','🥨'],['snack','🍿'],['popcorn','🍿'],
+  ['watermelon','🍉'],['fruit','🍉'],['veggie','🥕'],['salad','🥗'],
+  ['condiment','🍅'],['ketchup','🍅'],['mustard','🍯'],['sauce','🫙'],
+  ['napkin','🧻'],['plate','🍽️'],['utensil','🥄'],['fork','🍴'],['cup','🥤'],
+  ['water','💧'],['hydration','💧'],['ice','🧊'],['cooler','🧊'],
+  ['beer','🍺'],['brew','🍺'],['craft beer','🍺'],['keg','🍺'],['tap','🍺'],
+  ['wine','🍷'],['seltzer','🥤'],['beverage','🥤'],['drink','🥤'],['lemonade','🍋'],
+  ['coffee','☕'],['tea','🍵'],
+  ['grill','🔥'],['bbq','🔥'],['charcoal','🪨'],['propane','🔥'],['lighter','🔥'],
+  // ── INVENTORY & SUPPLIES ──
+  ['tent','⛺'],['canopy','⛺'],['shelter','⛺'],
+  ['table','🪑'],['chair','🪑'],['seating','🪑'],['folding','🪑'],
+  ['extension cord','🔌'],['cord','🔌'],['power','🔌'],['outlet','🔌'],
+  ['trash','🗑️'],['bag','🗑️'],['garbage','🗑️'],['recycling','♻️'],
+  ['sign','📋'],['banner','🏳️'],['flag','🚩'],['display','🖼️'],
+  ['speaker','🔊'],['audio','🔊'],['sound','🔊'],['mic','🎙️'],['microphone','🎙️'],
+  ['generator','⚡'],['battery','🔋'],['cable','🔌'],
+  ['first aid','🩹'],['medical','🩺'],['safety','🦺'],
+  ['tool','🔧'],['supply','📦'],['equipment','⚙️'],['hardware','🔩'],
+  // ── MARKETING & MERCH ──
+  ['jersey','👕'],['shirt','👕'],['tee','👕'],['apparel','👕'],
+  ['hat','🧢'],['cap','🧢'],
+  ['bag','👜'],['tote','👜'],
+  ['logo','🏷️'],['brand','🏷️'],['merch','🎁'],['swag','🎁'],['gift','🎁'],
+  ['video','🎬'],['photo','📸'],['camera','📸'],['photography','📸'],
+  ['social','📱'],['media','📱'],['marketing','📣'],
+  ['ticket','🎫'],['pass','🎫'],['wristband','🎫'],
+  // ── EVENT EXPERIENCE ──
+  ['baseball','⚾'],['bat','🏏'],['glove','🧤'],
+  ['cornhole','🎯'],['game','🎯'],['activity','🎪'],['entertainment','🎪'],
+  ['music','🎵'],['band','🎸'],['dj','🎧'],
+  ['parking','🚗'],['shuttle','🚌'],['transportation','🚗'],
+  ['volunteer','🦺'],['staff','🦺'],['crew','🦺'],
+  ['sponsor','🏆'],['partner','🤝'],['donor','💚'],
+  ['registration','📋'],['checkin','✅'],['check-in','✅'],
+  ['venue','🏛️'],['hot shops','🏛️'],['facility','🏛️'],
+  ['map','🗺️'],['layout','🗺️'],
+  ['weather','☁️'],['rain','🌧️'],['sun','☀️'],['tent heater','🔥'],
+  // ── FALLBACK ──
+  ['misc','📦'],['other','📦'],['item','📦'],
+];
 function ge(n){const lo=(n||'').toLowerCase();for(const[k,e]of EM)if(lo.includes(k))return e;return'📦';}
 function scls(s){return{tbd:'st',sourced:'ss_',donated:'sd',attention:'sa'}[s]||'st';}
 function rcls(s){return{sourced:'rs_',donated:'rd_',attention:'ra_'}[s]||'';}
@@ -2039,7 +2084,7 @@ function rOV(){
         <div>
           <div class="sp-name">${esc(sp.name)||'Unnamed sponsor'}</div>
           <div class="sp-biz">${esc(sp.business_name)||'—'}</div>
-          <div class="sp-role" style="color:${col}">${esc(sp.role||'Sponsor')}</div>
+          <div class="sp-role" style="color:${col}">${esc(sp.role||'Member')}</div>
         </div>
       </div>
       ${sp.bio_business?`<div class="sp-card-mid"><div class="sp-bio">${esc(sp.bio_business)}</div></div>`:''}
