@@ -272,6 +272,10 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
 .receipt-history{display:flex;flex-direction:column;gap:8px;}
 .receipt-row{background:white;border:1px solid var(--grb);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
 .receipt-row-info{flex:1;min-width:0;}
+/* ── BUDGET INPUTS ── */
+.bi{width:80px;border:1px solid var(--grb);border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:13px;outline:none;background:white;color:var(--text);transition:border-color .15s;}
+.bi:focus{border-color:#93c5fd;box-shadow:0 0 0 2px rgba(147,197,253,.2);}
+.bi:hover{border-color:#9ca3af;}
 .receipt-row-vendor{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .receipt-row-meta{font-size:13px;color:var(--tm);margin-top:3px;}
 .receipt-row-amt{font-family:var(--font-condensed);font-size:18px;font-weight:700;white-space:nowrap;}
@@ -1814,7 +1818,8 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="ctrow"><div class="cdot" style="background:var(--fb)"></div><div class="ctitle">Food & Beverage Supply</div></div>
   <div class="cx" id="cx-fb"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('fb')">+ Add item</button></div>
-  <div class="iw"><table class="it" id="tbl-fb"><thead><tr><th style="width:82px"></th><th style="width:24%">Item</th><th style="width:13%">Qty</th><th style="width:14%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div id="comm-budget-bar-fb"></div>
+  <div class="iw"><table class="it" id="tbl-fb"><thead><tr><th style="width:72px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:12%">Est. Budget</th><th style="width:12%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-fb"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-fb"></div>
 </div>
@@ -1822,7 +1827,8 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="ctrow"><div class="cdot" style="background:var(--inv)"></div><div class="ctitle">General Inventory & Supply</div></div>
   <div class="cx" id="cx-inv"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('inv')">+ Add item</button></div>
-  <div class="iw"><table class="it" id="tbl-inv"><thead><tr><th style="width:82px"></th><th style="width:24%">Item</th><th style="width:13%">Qty</th><th style="width:14%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div id="comm-budget-bar-inv"></div>
+  <div class="iw"><table class="it" id="tbl-inv"><thead><tr><th style="width:72px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:12%">Est. Budget</th><th style="width:12%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-inv"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-inv"></div>
 </div>
@@ -1830,7 +1836,8 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="ctrow"><div class="cdot" style="background:var(--mkt)"></div><div class="ctitle">Marketing & Swag</div></div>
   <div class="cx" id="cx-mkt"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('mkt')">+ Add item</button></div>
-  <div class="iw"><table class="it" id="tbl-mkt"><thead><tr><th style="width:82px"></th><th style="width:24%">Item</th><th style="width:13%">Qty</th><th style="width:14%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div id="comm-budget-bar-mkt"></div>
+  <div class="iw"><table class="it" id="tbl-mkt"><thead><tr><th style="width:72px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:12%">Est. Budget</th><th style="width:12%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-mkt"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-mkt"></div>
 </div>
@@ -1838,7 +1845,8 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="ctrow"><div class="cdot" style="background:var(--gx)"></div><div class="ctitle">Guest Experience</div></div>
   <div class="cx" id="cx-gx"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('gx')">+ Add item</button></div>
-  <div class="iw"><table class="it" id="tbl-gx"><thead><tr><th style="width:82px"></th><th style="width:24%">Item</th><th style="width:13%">Qty</th><th style="width:14%">Status</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div id="comm-budget-bar-gx"></div>
+  <div class="iw"><table class="it" id="tbl-gx"><thead><tr><th style="width:72px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:12%">Est. Budget</th><th style="width:12%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-gx"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-gx"></div>
 </div>
@@ -1846,6 +1854,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
   <div class="ctrow"><div class="cdot" style="background:var(--vol)"></div><div class="ctitle">Volunteer Operations</div></div>
   <div class="cx" id="cx-vol"></div>
   <div class="al al-g" style="margin-bottom:16px;"><strong>Recruitment underway.</strong> 50 Mile March intended to provide most/all of the ~32 volunteers across 4 shifts.</div>
+  <div id="comm-budget-bar-vol"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-vol"></div>
 </div>
 
@@ -2640,18 +2649,54 @@ function rT(k){
   tbody.innerHTML='';
   rows.forEach(item=>{
     const tr=document.createElement('tr');tr.dataset.id=item.id;
+    const est=Number(item.estimated_budget||0);
+    const act=Number(item.actual_spend||0);
+    const locked=item.spend_locked||false;
+    const variance=est>0?act-est:null;
+    const varClass=variance===null?'':'';
+    const varStyle=variance===null?'color:var(--tm)':(variance>0?'color:var(--red);font-weight:600':'color:var(--green);font-weight:600');
+    const varText=variance===null?'':(variance>0?`▲ ${fmt$(Math.abs(variance))}`:(variance<0?`▼ ${fmt$(Math.abs(variance))}`:'On budget'));
+    const actStyle=act>est&&est>0?'color:var(--red)':'color:var(--text)';
     tr.innerHTML=`
       <td class="ic" onclick="openCard('${item.id}','${k}')">${thumbHtml(item.id,item.name)}</td>
       <td><input class="ni" type="text" value="${esc(item.name)}" placeholder="Item name" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','name',this.value)"></td>
-      <td><input class="qi" type="text" value="${esc(item.qty)}" placeholder="Qty" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','qty',this.value)"></td>
+      <td><input class="qi" type="text" value="${esc(item.qty)}" placeholder="—" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','qty',this.value)"></td>
       <td><select class="ssel ${scls(item.status)}" onchange="uf('${item.id}','status',this.value);this.className='ssel '+scls(this.value)">
-        <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option><option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
-        <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option><option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
+        <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
+        <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
+        <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
+        <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
       </select></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span style="color:var(--tm);font-size:13px;">$</span>
+          <input class="bi" type="number" min="0" step="0.01" value="${est||''}" placeholder="0.00"
+            onfocus="focId='${item.id}'" onblur="focId=null"
+            onchange="ufBudget('${item.id}','estimated_budget',this.value)"
+            style="width:80px;border:1px solid var(--grb);border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:13px;outline:none;background:white;">
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:3px;">
+            <span style="color:var(--tm);font-size:13px;">$</span>
+            <input class="bi" type="number" min="0" step="0.01" value="${act||''}" placeholder="0.00"
+              onfocus="focId='${item.id}'" onblur="focId=null"
+              onchange="ufSpend('${item.id}',this.value)"
+              style="width:80px;border:1px solid var(--grb);border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:13px;outline:none;background:white;${act>est&&est>0?'border-color:#fca5a5;':''}"
+              title="${locked?'Manually set — not synced from receipts':'Auto-calculated from approved receipts'}">
+            ${locked?`<span title="Manually overridden" style="font-size:11px;cursor:pointer;opacity:.5;" onclick="unlockSpend('${item.id}')">🔒</span>`:`<span title="Auto from receipts" style="font-size:11px;opacity:.3;">⟳</span>`}
+          </div>
+          ${variance!==null?`<span style="font-size:11px;${varStyle};white-space:nowrap;">${varText}</span>`:''}
+        </div>
+      </td>
       <td><input class="noi" type="text" value="${esc(item.note)}" placeholder="Notes…" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)"></td>
       <td><button class="db" onclick="delItem('${item.id}')">×</button></td>`;
     tbody.appendChild(tr);
   });
+  // Refresh the budget bar for this committee
+  const bar=document.getElementById('comm-budget-bar-'+k);
+  if(bar) bar.innerHTML=rCommBudgetBar(k);
 }
 function rG(k){
   const grid=document.getElementById('mg-'+k);if(!grid)return;
@@ -2663,11 +2708,95 @@ function rG(k){
     div.innerHTML=`${url?`<img class="mt-img" src="${url}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
       <div class="mt-fb" style="${url?'':'display:flex'}">${emoji}</div>
       <div class="mt-body"><div class="mt-name">${esc(item.name)||'<em style="color:#9ca3af">Unnamed</em>'}</div><div class="mt-qty">${esc(item.qty)||'TBD'}</div>
-      <span style="${sstyle(item.status)};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;">${slbl(item.status)}</span></div>
+      <span style="${sstyle(item.status)};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;">${slbl(item.status)}</span>
+      ${(item.estimated_budget>0||item.actual_spend>0)?`<div style="margin-top:5px;font-size:11px;color:var(--tm);display:flex;gap:6px;flex-wrap:wrap;">
+        ${item.estimated_budget>0?`<span>Est: <strong style="color:var(--text)">${fmt$(item.estimated_budget)}</strong></span>`:""}
+        ${item.actual_spend>0?`<span style="${item.actual_spend>item.estimated_budget&&item.estimated_budget>0?'color:var(--red);font-weight:600':''}">Spent: <strong>${fmt$(item.actual_spend)}</strong></span>`:""}
+      </div>`:""}
+      </div>
       <div class="mt-exp">↗</div>`;
     grid.appendChild(div);
   });
 }
+// ── ITEM BUDGET HELPERS ──
+async function ufBudget(id, field, val){
+  const num = parseFloat(val)||0;
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  item[field] = num;
+  await sb.from('items').update({[field]:num}).eq('id',id);
+  rT(item.committee); rOV();
+}
+
+async function ufSpend(id, val){
+  const num = parseFloat(val)||0;
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  item.actual_spend = num;
+  item.spend_locked = true; // manual override — stop receipt auto-sync for this item
+  await sb.from('items').update({actual_spend:num, spend_locked:true}).eq('id',id);
+  rT(item.committee); rOV();
+}
+
+async function unlockSpend(id){
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  item.spend_locked = false;
+  await sb.from('items').update({spend_locked:false}).eq('id',id);
+  syncItemSpendFromReceipts(item.committee);
+}
+
+// Recalculate actual_spend for all items in a committee from approved receipts
+async function syncItemSpendFromReceipts(committee){
+  const committeeItems = items.filter(i=>i.committee===committee&&!i.spend_locked);
+  if(!committeeItems.length) return;
+  // Sum approved receipt_items by matching item name keywords
+  const approvedReceipts = receipts.filter(r=>r.status==='approved');
+  const approvedReceiptIds = approvedReceipts.map(r=>r.id);
+  const relevantRIs = receiptItems.filter(ri=>approvedReceiptIds.includes(ri.receipt_id));
+  // For now, distribute spend proportionally by estimated_budget weight
+  // A more precise match would require linking receipt_items to item IDs
+  const totalApproved = approvedReceipts
+    .filter(r=>{ const sp=sponsors.find(s=>s.id===r.sponsor_id); return !sp||Object.values(CX).some(c=>c.committee===committee&&c.members.some(m=>m.name===sp?.name)); })
+    .reduce((s,r)=>s+Number(r.total_amount||0),0);
+  // Re-render with fresh state
+  rT(committee);
+  rOV();
+}
+
+// Committee budget summary bar — totals across all items
+function rCommBudgetBar(committee){
+  const cItems = items.filter(i=>i.committee===committee);
+  const totalEst = cItems.reduce((s,i)=>s+Number(i.estimated_budget||0),0);
+  const totalAct = cItems.reduce((s,i)=>s+Number(i.actual_spend||0),0);
+  if(!totalEst&&!totalAct) return '';
+  const pct = totalEst>0?Math.min(100,Math.round(totalAct/totalEst*100)):0;
+  const over = totalAct>totalEst&&totalEst>0;
+  return `<div style="background:white;border:1px solid var(--grb);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:160px;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+        <span style="color:var(--tm);">Committee budget</span>
+        <span style="font-weight:600;${over?'color:var(--red)':''};">${fmt$(totalAct)} <span style="color:var(--tt);font-weight:400;">/ ${fmt$(totalEst)}</span></span>
+      </div>
+      <div style="height:8px;background:var(--grl);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${over?'var(--red)':'var(--green)'};border-radius:4px;transition:width .4s;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;flex-shrink:0;">
+      <div style="text-align:center;"><div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;">${fmt$(totalEst)}</div><div style="font-size:11px;color:var(--tm);">Estimated</div></div>
+      <div style="text-align:center;"><div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;${over?'color:var(--red)':'color:var(--green)'}">${fmt$(totalAct)}</div><div style="font-size:11px;color:var(--tm);">Actual</div></div>
+      ${totalEst>0?`<div style="text-align:center;"><div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;${over?'color:var(--red)':'color:var(--green)'}">${over?'+':'-'}${fmt$(Math.abs(totalAct-totalEst))}</div><div style="font-size:11px;color:var(--tm);">${over?'Over':'Remaining'}</div></div>`:''}
+    </div>
+  </div>`;
+}
+
+function rCommBudgetBars(){
+  ['fb','inv','mkt','gx','vol'].forEach(k=>{
+    const el=document.getElementById('comm-budget-bar-'+k);
+    if(el) el.innerHTML=rCommBudgetBar(k);
+  });
+}
+
 function allPeople(){
   // Merge sponsors + committee members for assignee options
   const fromSponsors=sponsors.map(s=>s.name).filter(Boolean);
@@ -2799,6 +2928,7 @@ async function saveAssign(id){
 function rAll(){
   ['fb','inv','mkt','gx','vol'].forEach(k=>{rT(k);rG(k);rR(k);renderCx(k);});
   rSP();rBUD();rReceipts();rAssets();rShifts();rOV();
+  rCommBudgetBars();
 }
 
 // ── ITEM CARD MODAL ──
@@ -4807,6 +4937,56 @@ async function approveReceiptPost(id) {
   rReceipts(); rBUD(); rOV();
   toast('Receipt approved', `${r.vendor||'Receipt'} — ${fmt$(r.total_amount)}`, '');
   await sb.from('receipts').update({status:'approved',approved_by:presenceName||'Committee',approved_at:new Date().toISOString()}).eq('id',id);
+  // Auto-sync actual_spend for all unlocked items across committees
+  syncAllItemSpendFromReceipts();
+}
+
+// Recalculate actual_spend per item from all approved receipts
+// Strategy: sum approved receipt totals per committee, then distribute
+// proportionally across items by estimated_budget weight (unlocked items only).
+// Items with spend_locked=true keep their manual value.
+async function syncAllItemSpendFromReceipts(){
+  const allApproved = receipts.filter(r=>r.status==='approved');
+
+  // Group approved receipt totals by sponsor → committee
+  const commSpend = {fb:0,inv:0,mkt:0,gx:0,vol:0};
+  allApproved.forEach(r=>{
+    const sp = sponsors.find(s=>s.id===r.sponsor_id);
+    if(!sp) return;
+    // Match sponsor to their primary committee via CX
+    for(const[comm,cx] of Object.entries(CX)){
+      if(cx.members.some(m=>m.name===sp.name)){
+        commSpend[comm]=(commSpend[comm]||0)+Number(r.total_amount||0);
+        break;
+      }
+    }
+  });
+
+  // Distribute per committee
+  for(const [comm, totalSpent] of Object.entries(commSpend)){
+    if(!totalSpent) continue;
+    const unlocked = items.filter(i=>i.committee===comm&&!i.spend_locked);
+    if(!unlocked.length) continue;
+    const totalEst = unlocked.reduce((s,i)=>s+Number(i.estimated_budget||0),0);
+
+    for(const item of unlocked){
+      let share;
+      if(totalEst>0){
+        // Weight by estimated budget
+        share = Math.round((Number(item.estimated_budget||0)/totalEst)*totalSpent*100)/100;
+      } else {
+        // Equal split if no budgets set
+        share = Math.round((totalSpent/unlocked.length)*100)/100;
+      }
+      if(item.actual_spend !== share){
+        item.actual_spend = share;
+        await sb.from('items').update({actual_spend:share}).eq('id',item.id);
+      }
+    }
+    rT(comm);
+  }
+  rCommBudgetBars();
+  rOV();
 }
 
 async function rejectReceiptPost(id) {
