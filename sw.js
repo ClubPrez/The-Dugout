@@ -1,8 +1,8 @@
-// Leadoff Lounge 2026 — Service Worker
+// The Dugout 2026 — Service Worker
 // Offline-first: caches the shell + queues writes when offline
 
-const CACHE_NAME = 'll26-v1';
-const OFFLINE_CACHE = 'll26-offline-v1';
+const CACHE_NAME = 'dugout26-v1';
+const OFFLINE_CACHE = 'dugout26-offline-v1';
 
 // Files to cache for offline shell
 const SHELL_FILES = [
@@ -80,7 +80,7 @@ async function networkFirst(request) {
 // ── BACKGROUND SYNC ──
 // When connectivity returns, replay queued offline writes
 self.addEventListener('sync', e => {
-  if (e.tag === 'll26-sync') {
+  if (e.tag === 'dugout26-sync') {
     e.waitUntil(replayQueue());
   }
 });

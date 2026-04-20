@@ -1,0 +1,30 @@
+The Dugout 2026 Command Center — single-file vanilla HTML/CSS/JS dashboard.
+
+STACK
+- Single file: index.html (~6,000 lines). All app code stays here.
+- Backend: Supabase (project lcqevefzbotmxtjbpgvl, region us-west-2).
+- Deployment: GitHub Pages.
+- No build tools, no frameworks, no npm.
+
+CONVENTIONS
+- CSS: variables defined on :root. Always use var(--name) for colors and tokens—never hardcode color values. If a token is missing from :root, add it there instead of hardcoding.
+- Glass morphism: use var(--glass-bg), var(--glass-border), var(--glass-shadow).
+- Typography: var(--font) for body text; var(--font-condensed) for display and numbers.
+- Radius: var(--r) standard; var(--r-sm) small; var(--r-lg) large.
+- State: module-level let variables (items, sponsors, campaigns, vendors, etc.).
+- Render functions: rT(k), rOV(), rComms(), rCampaigns(), rVendors(), and the same naming pattern elsewhere.
+- Supabase: all calls use the global sb client—do not introduce alternate clients.
+
+DO NOT
+- Split into multiple files or suggest splitting.
+- Add npm packages, bundlers, or build steps.
+- Use React, Vue, or any UI framework.
+- Hardcode hex/rgb colors or duplicate palette values outside :root tokens.
+- Change or reorder the PANELS array in a way that breaks its intended order.
+
+SCOPE
+- Prefer edits to index.html unless the task explicitly involves manifest.json, sw.js, or other repo assets.
+- Preserve PWA and service worker behavior unless asked to change it.
+
+SECURITY
+- Do not commit secrets, API keys, or Supabase service_role keys. Follow existing anon-key patterns.
