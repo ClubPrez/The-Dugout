@@ -346,7 +346,7 @@ tr.it-acc td{background:var(--grl);padding:16px 18px !important;border-top:none 
 .it-acc-grid label{font-size:12px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:0.06em;padding-top:8px;}
 .it-acc-meta{font-size:11px;color:var(--tt);}
 .it-drag-cell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px !important;width:52px;}
-.it-drag-h{cursor:grab;color:var(--tt);font-size:15px;line-height:1;letter-spacing:-2px;user-select:none;padding:4px;border-radius:6px;}
+.it-drag-h{cursor:grab;color:var(--tt);font-size:15px;line-height:1;letter-spacing:-2px;user-select:none;padding:6px 8px;border-radius:6px;display:inline-block;touch-action:none;}
 .it-drag-h:active{cursor:grabbing;}
 .it-nudge{display:flex;flex-direction:column;gap:2px;}
 .it-nudge-btn{background:var(--grl);border:1px solid var(--grb);border-radius:4px;font-size:11px;line-height:1;padding:3px 6px;cursor:pointer;color:var(--tm);}
@@ -2716,10 +2716,10 @@ function rT(k){
     const variance=est>0?act-est:null;
     const varStyle=variance===null?'color:var(--tm)':(variance>0?'color:var(--red);font-weight:600':'color:var(--green);font-weight:600');
     const varText=variance===null?'':(variance>0?`▲ ${fmt$(Math.abs(variance))}`:(variance<0?`▼ ${fmt$(Math.abs(variance))}`:'On budget'));
-    const tr=document.createElement('tr');tr.className='it-main';tr.dataset.itemId=item.id;tr.setAttribute('draggable','true');
+    const tr=document.createElement('tr');tr.className='it-main';tr.dataset.itemId=item.id;
     tr.innerHTML=`
       <td class="it-drag-cell">
-        <span class="it-drag-h" title="Drag to reorder priority">⋮⋮</span>
+        <span class="it-drag-h" draggable="true" title="Drag to reorder priority">⋮⋮</span>
         <div class="it-nudge">
           <button type="button" class="it-nudge-btn" onclick="event.stopPropagation();nudgeItemOrder('${k}','${item.id}',-1)" aria-label="Move up"${idx===0?' disabled':''}>↑</button>
           <button type="button" class="it-nudge-btn" onclick="event.stopPropagation();nudgeItemOrder('${k}','${item.id}',1)" aria-label="Move down"${idx>=nTot-1?' disabled':''}>↓</button>
@@ -2760,15 +2760,21 @@ function rT(k){
       </td>
       <td><input class="noi" type="text" value="${esc(item.note)}" placeholder="Notes…" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)"></td>
       <td onclick="event.stopPropagation()"><button class="db" onclick="delItem('${item.id}')">×</button></td>`;
-    tr.addEventListener('dragstart',e=>{
-      if(!e.target.closest('.it-drag-h')){e.preventDefault();return;}
-      e.dataTransfer.setData('text/plain',item.id);e.dataTransfer.effectAllowed='move';tr.classList.add('it-dragging');
-    });
-    tr.addEventListener('dragend',()=>tr.classList.remove('it-dragging'));
-    tr.addEventListener('dragover',e=>{e.preventDefault();});
+    const grip=tr.querySelector('.it-drag-h');
+    if(grip){
+      grip.addEventListener('dragstart',e=>{
+        e.stopPropagation();
+        try{e.dataTransfer.setData('text/plain',item.id);}catch(_){e.dataTransfer.setData('Text',item.id);}
+        e.dataTransfer.effectAllowed='move';
+        tr.classList.add('it-dragging');
+      });
+      grip.addEventListener('dragend',()=>tr.classList.remove('it-dragging'));
+    }
+    tr.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer&&(e.dataTransfer.dropEffect='move');});
     tr.addEventListener('drop',e=>{
       e.preventDefault();
-      const fromId=e.dataTransfer.getData('text/plain');
+      let fromId='';
+      try{fromId=e.dataTransfer.getData('text/plain');}catch(_){fromId=e.dataTransfer.getData('Text');}
       if(!fromId||fromId===item.id)return;
       reorderItemBefore(k,fromId,item.id).catch(()=>{});
     });
