@@ -1,7 +1,7 @@
 {
-  "name": "Leadoff Lounge 2026 — Command Center",
-  "short_name": "Leadoff Lounge",
-  "description": "Event command center for Leadoff Lounge 2026 at the College World Series",
+  "name": "The Dugout 2026 — Command Center",
+  "short_name": "The Dugout",
+  "description": "Event command center for The Dugout 2026 at the College World Series",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0D1F3C",
