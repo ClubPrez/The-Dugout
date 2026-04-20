@@ -1,4 +1,4 @@
-M<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -336,6 +336,9 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
 .ss_{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
 .sd{background:#dbeafe;color:#1e3a8a;border-color:#93c5fd;}
 .sa{background:#ffedd5;color:#9a3412;border-color:#fdba74;}
+.scr{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;}
+.sca{background:#bbf7d0;color:#14532d;border-color:#86efac;}
+.sln{background:#e2e8f0;color:#475569;border-color:#cbd5e1;}
 .db{background:none;border:none;color:#d1d5db;cursor:pointer;font-size:18px;line-height:1;padding:0 4px;border-radius:3px;transition:all .1s;}
 .db:hover{color:var(--red);background:var(--rl);}
 .it-main.acc-open td{background:rgba(239,246,255,0.92);}
@@ -1096,10 +1099,7 @@ tr.it-dragging{opacity:0.55;}
       <div class="mrow">
         <div class="mf"><label>Quantity</label><input class="mi" id="MQty" type="text" oninput="mfc('qty',this.value)"></div>
         <div class="mf"><label>Status</label>
-          <select class="mi" id="MStat" onchange="mfc('status',this.value)" style="cursor:pointer;">
-            <option value="tbd">TBD</option><option value="sourced">Sourced ✓</option>
-            <option value="donated">Donated</option><option value="attention">Needs attention</option>
-          </select>
+          <select class="mi" id="MStat" onchange="mfc('status',this.value)" style="cursor:pointer;"></select>
         </div>
       </div>
       <div class="mf"><label>Notes</label><textarea class="mi ta" id="MNote" rows="3" oninput="mfc('note',this.value)"></textarea></div>
@@ -2007,10 +2007,33 @@ const EM=[
   ['misc','📦'],['other','📦'],['item','📦'],
 ];
 function ge(n){const lo=(n||'').toLowerCase();for(const[k,e]of EM)if(lo.includes(k))return e;return'📦';}
-function scls(s){return{tbd:'st',sourced:'ss_',donated:'sd',attention:'sa'}[s]||'st';}
+const COMM_SHORT={fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers'};
+function commName(k){return COMM_SHORT[k]||'Committee';}
+/** Status `<option>` list for inventory; labels use this committee's short name for stance rows. */
+function invStatusOptionsHtml(k,current){
+  const cn=commName(k),cur=current||'tbd';
+  const sel=v=>cur===v?'selected':'';
+  return`<option value="tbd" ${sel('tbd')}>TBD</option>
+<option value="sourced" ${sel('sourced')}>Sourced ✓</option>
+<option value="donated" ${sel('donated')}>Donated</option>
+<option value="attention" ${sel('attention')}>Needs attention</option>
+<option value="committee_recommend" ${sel('committee_recommend')}>${esc(cn)} Recommends</option>
+<option value="committee_approve" ${sel('committee_approve')}>${esc(cn)} Approves</option>
+<option value="lower_need" ${sel('lower_need')}>Lower Need</option>`;
+}
+function scls(s){return{tbd:'st',sourced:'ss_',donated:'sd',attention:'sa',committee_recommend:'scr',committee_approve:'sca',lower_need:'sln'}[s]||'st';}
 function rcls(s){return{sourced:'rs_',donated:'rd_',attention:'ra_'}[s]||'';}
-function slbl(s){return{tbd:'TBD',sourced:'Sourced ✓',donated:'Donated',attention:'Needs attention'}[s]||'TBD';}
-function sstyle(s){return{tbd:'background:#f3f4f6;color:#374151',sourced:'background:#d1fae5;color:#065f46',donated:'background:#dbeafe;color:#1e3a8a',attention:'background:#ffedd5;color:#9a3412'}[s]||'';}
+function slbl(s,k){
+  const cn=commName(k||'fb');
+  if(s==='committee_recommend')return cn+' Recommends';
+  if(s==='committee_approve')return cn+' Approves';
+  if(s==='lower_need')return 'Lower Need';
+  return{tbd:'TBD',sourced:'Sourced ✓',donated:'Donated',attention:'Needs attention'}[s]||'TBD';
+}
+function sstyle(s){
+  return{tbd:'background:#f3f4f6;color:#374151',sourced:'background:#d1fae5;color:#065f46',donated:'background:#dbeafe;color:#1e3a8a',attention:'background:#ffedd5;color:#9a3412',
+    committee_recommend:'background:#ede9fe;color:#5b21b6',committee_approve:'background:#bbf7d0;color:#14532d',lower_need:'background:#e2e8f0;color:#475569'}[s]||'';
+}
 
 function thumbHtml(id,name){
   const url=giu(name),emoji=ge(name);
@@ -2740,10 +2763,7 @@ function rT(k){
       <td class="it-row-name">${rowTitle}</td>
       <td><input class="qi" type="text" value="${esc(item.qty)}" placeholder="—" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','qty',this.value)"></td>
       <td><select class="ssel ${scls(item.status)}" onclick="event.stopPropagation()" onchange="uf('${item.id}','status',this.value);this.className='ssel '+scls(this.value)">
-        <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
-        <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
-        <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
-        <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
+        ${invStatusOptionsHtml(k,item.status)}
       </select></td>
       <td onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:4px;">
@@ -2820,10 +2840,7 @@ function rT(k){
           <input class="mi inv-qty" type="text" value="${esc(item.qty)}" onclick="event.stopPropagation()" onchange="uf('${item.id}','qty',this.value)">
           <label>Status</label>
           <select class="mi inv-st" style="padding:10px 12px;" onclick="event.stopPropagation()" onchange="uf('${item.id}','status',this.value)">
-            <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
-            <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
-            <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
-            <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
+            ${invStatusOptionsHtml(k,item.status)}
           </select>
           <label>Est. budget</label>
           <input class="mi inv-num" type="number" min="0" step="0.01" value="${est||''}" onclick="event.stopPropagation()" onchange="ufBudget('${item.id}','estimated_budget',this.value)">
@@ -2853,7 +2870,7 @@ function rG(k){
     div.innerHTML=`${url?`<img class="mt-img" src="${url}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
       <div class="mt-fb" style="${url?'':'display:flex'}">${emoji}</div>
       <div class="mt-body"><div class="mt-name">${esc(item.name)||'<em style="color:#9ca3af">Unnamed</em>'}</div><div class="mt-qty">${esc(item.qty)||'TBD'}</div>
-      <span style="${sstyle(item.status)};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;">${slbl(item.status)}</span>
+      <span style="${sstyle(item.status)};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;">${slbl(item.status,item.committee)}</span>
       ${(item.estimated_budget>0||item.actual_spend>0)?`<div style="margin-top:5px;font-size:11px;color:var(--tm);display:flex;gap:6px;flex-wrap:wrap;">
         ${item.estimated_budget>0?`<span>Est: <strong style="color:var(--text)">${fmt$(item.estimated_budget)}</strong></span>`:""}
         ${item.actual_spend>0?`<span style="${item.actual_spend>item.estimated_budget&&item.estimated_budget>0?'color:var(--red);font-weight:600':''}">Spent: <strong>${fmt$(item.actual_spend)}</strong></span>`:""}
@@ -3090,7 +3107,8 @@ function fillCard(){
   const tags={fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers'};
   document.getElementById('MTag').textContent=tags[cK]||'';
   document.getElementById('MName').value=item.name||'';document.getElementById('MQty').value=item.qty||'';
-  document.getElementById('MStat').value=item.status||'tbd';document.getElementById('MNote').value=item.note||'';
+  const mStat=document.getElementById('MStat');mStat.innerHTML=invStatusOptionsHtml(cK,item.status||'tbd');mStat.value=item.status||'tbd';
+  document.getElementById('MNote').value=item.note||'';
   document.getElementById('MSave').textContent='Changes save automatically';
   document.getElementById('MNavLbl').textContent=`${idx+1} of ${ci.length}`;
   document.getElementById('MPrev').disabled=idx===0;document.getElementById('MNext').disabled=idx===ci.length-1;
@@ -3101,6 +3119,8 @@ const mdbt={};
 function mfc(field,value){
   if(!cId)return;const item=items.find(i=>i.id===cId);if(item)item[field]=value;
   if(field==='name'){const url=giu(value);const mImg=document.getElementById('MImg'),mFb=document.getElementById('MFb');if(url){mImg.src=url;mImg.style.display='block';mFb.style.display='none';}else{mImg.style.display='none';mFb.style.display='flex';}if(mFb)mFb.textContent=ge(value);refreshThumb(cId,value);rG(cK);}
+  if(['name','qty','note','status'].includes(field)&&item)syncInvDuplicateFields(cId,cK);
+  if(field==='status')rG(cK);
   document.getElementById('MSave').textContent='Saving…';
   clearTimeout(mdbt[field]);mdbt[field]=setTimeout(async()=>{await sb.from('items').update({[field]:value}).eq('id',cId);document.getElementById('MSave').textContent='Saved ✓';},600);
 }
@@ -3128,7 +3148,7 @@ function syncInvDuplicateFields(id,k){
     const hdr=acc.querySelector('.it-acc-hdr span:first-child');if(hdr)hdr.textContent=item.name||'Untitled item';
   }
 }
-async function uf(id,field,value){const item=items.find(i=>i.id===id);if(item)item[field]=value;if(['name','qty','note','status','proposal_note'].includes(field)&&item)syncInvDuplicateFields(id,item.committee);if(field==='name'){refreshThumb(id,value);rG(items.find(i=>i.id===id)?.committee);}rOV();clearTimeout(dbt['i'+id+field]);dbt['i'+id+field]=setTimeout(async()=>await sb.from('items').update({[field]:value}).eq('id',id),600);}
+async function uf(id,field,value){const item=items.find(i=>i.id===id);if(item)item[field]=value;if(['name','qty','note','status','proposal_note'].includes(field)&&item)syncInvDuplicateFields(id,item.committee);if(field==='name'){refreshThumb(id,value);rG(items.find(i=>i.id===id)?.committee);}else if(field==='status'){const k=item?.committee;if(k)rG(k);}rOV();clearTimeout(dbt['i'+id+field]);dbt['i'+id+field]=setTimeout(async()=>await sb.from('items').update({[field]:value}).eq('id',id),600);}
 async function tr2(id,done){const r=resps.find(r=>r.id===id);if(r)r.done=done;const el=document.querySelector(`.ri[data-id="${id}"]`);if(el){el.classList.toggle('done',done);el.querySelector('.rt').style.textDecoration=done?'line-through':'';}rOV();await sb.from('responsibilities').update({done}).eq('id',id);}
 async function addItem(k){const max=Math.max(0,...items.filter(i=>i.committee===k).map(i=>i.sort_order));const{data:nr}=await sb.from('items').insert({committee:k,name:'',qty:'',status:'tbd',note:'',proposal_note:'',sort_order:max+1}).select().single();if(nr){items.push(nr);rT(k);rG(k);setTimeout(()=>{setInvAccOpen(nr.id,k,true);document.querySelector('#tbl-'+k+' tr.it-acc[data-item-id="'+nr.id+'"] input.inv-name')?.focus();},60);}}
 async function delItem(id){const item=items.find(i=>i.id===id);if(!item)return;items=items.filter(i=>i.id!==id);rT(item.committee);rG(item.committee);rOV();await sb.from('items').delete().eq('id',id);}
@@ -5396,24 +5416,26 @@ async function submitSurveyResponse(sid) {
 }
 
 // ── NAV ──
-const PANELS=['overview','eventday','sponsors','budget','receipts','meetings','projects','assets','attendees','surveys','fb','inv','mkt','gx','vol'];
+/** Main header row (#nav-main): order must match the .nt elements in the DOM. */
+const MAIN_NAV_IDS=['overview','eventday','sponsors','budget','receipts','meetings','projects','assets','attendees','surveys'];
 const PANEL_NAMES={overview:'Overview',eventday:'Event Day',sponsors:'Sponsors',budget:'Budget',receipts:'Receipts',meetings:'Meetings',projects:'Projects',assets:'Assets',attendees:'Attendees',surveys:'Surveys',fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers'};
+/** Committee row (#nav-committees): keys must match data-comm on each .nct. */
 const COMMITTEE_PANELS=['fb','inv','mkt','gx','vol'];
 function gp(id){
   expandedInvId=null;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+id)?.classList.add('active');
 
-  // Clear both nav rows
-  document.querySelectorAll('.nt').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.nct').forEach(t=>t.classList.remove('active'));
+  const mainTabs=document.querySelectorAll('#nav-main .nt');
+  const commTabs=document.querySelectorAll('#nav-committees .nct');
+  mainTabs.forEach(t=>t.classList.remove('active'));
+  commTabs.forEach(t=>t.classList.remove('active'));
 
-  // Activate the right tab in the right row
   if(COMMITTEE_PANELS.includes(id)){
-    document.querySelector(`.nct[data-comm="${id}"]`)?.classList.add('active');
+    document.querySelector(`#nav-committees .nct[data-comm="${id}"]`)?.classList.add('active');
   } else {
-    const idx=PANELS.indexOf(id);
-    if(idx!==-1) document.querySelectorAll('.nt')[idx]?.classList.add('active');
+    const idx=MAIN_NAV_IDS.indexOf(id);
+    if(idx!==-1) mainTabs[idx]?.classList.add('active');
   }
 
   currentPage=PANEL_NAMES[id]||id;
