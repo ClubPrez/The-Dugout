@@ -1339,7 +1339,7 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
       <div class="weather-location">Hot Shops · Omaha, NE</div>
     </div>
     <div class="weather-details" id="WX-details"></div>
-    <button class="weather-refresh" onclick="fetchWeather()">↺ Refresh</button>
+    <button class="weather-refresh" onclick="fetchWeather(true)">↺ Refresh</button>
   </div>
   <div class="forecast-strip" id="WX-forecast" style="margin-bottom:14px;"></div>
 
@@ -4628,94 +4628,111 @@ async function checkInSafe(id) {
 window.checkIn = checkInSafe;
 
 // ══════════════════════════════════════
-// ── WEATHER ──
+// ── WEATHER (live: Open-Meteo, no API key; alerts: api.weather.gov when CORS allows)
 // ══════════════════════════════════════
-const WX_LAT = 41.2565;
-const WX_LON = -95.9345;
-const WX_API_KEY = 'PASTE_YOUR_OPENWEATHERMAP_KEY_HERE'; // free at openweathermap.org
+const WX_LAT = 41.2688;
+const WX_LON = -95.9277;
 let wxLastFetch = 0;
 let wxData = null;
 
-const WX_ICONS = {
-  '01':'☀️','02':'⛅','03':'🌥️','04':'☁️',
-  '09':'🌧️','10':'🌦️','11':'⛈️','13':'❄️','50':'🌫️'
-};
+function wmoEmoji(code){
+  const c=Number(code);
+  if(c===0)return'☀️';if(c===1)return'🌤️';if(c===2)return'⛅';if(c===3)return'☁️';
+  if(c<=48)return'🌫️';if(c<=57)return'🌦️';if(c<=67)return'🌧️';if(c<=77)return'❄️';
+  if(c<=82)return'🌦️';if(c<=86)return'⛈️';if(c<=99)return'⛈️';return'🌡️';
+}
+function wmoDescription(code){
+  const c=Number(code);
+  if(c===0)return'Clear sky';if(c===1)return'Mainly clear';if(c===2)return'Partly cloudy';if(c===3)return'Overcast';
+  if(c<=48)return'Fog';if(c<=57)return'Drizzle';if(c<=67)return'Rain';if(c<=77)return'Snow';
+  if(c<=82)return'Showers';if(c<=99)return'Thunderstorm';return'Current conditions';
+}
 
-async function fetchWeather() {
-  if (!isOnline) { document.getElementById('WX-desc').textContent = 'Offline — no weather data'; return; }
-  const now = Date.now();
-  if (now - wxLastFetch < 600000 && wxData) { renderWeather(wxData); return; } // cache 10 min
-  if (WX_API_KEY === 'PASTE_YOUR_OPENWEATHERMAP_KEY_HERE') {
-    renderWeatherMock(); return; // demo mode
-  }
-  try {
-    const r = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat=${WX_LAT}&lon=${WX_LON}&exclude=minutely,daily&units=imperial&appid=${WX_API_KEY}`);
-    wxData = await r.json();
-    wxLastFetch = now;
+async function fetchWeather(force){
+  const descEl=document.getElementById('WX-desc');
+  if(!isOnline){descEl.textContent='Offline — no weather data';return;}
+  const now=Date.now();
+  if(!force&&now-wxLastFetch<600000&&wxData){renderWeather(wxData);return;}
+  descEl.textContent='Loading weather…';
+  try{
+    const omUrl=`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}`+
+      `&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,uv_index`+
+      `&hourly=temperature_2m,weather_code`+
+      `&forecast_hours=24&timezone=America%2FChicago&wind_speed_unit=mph&temperature_unit=fahrenheit`;
+    const om=await fetch(omUrl).then(r=>{if(!r.ok)throw new Error('wx');return r.json();});
+    const cur=om.current,h=om.hourly;
+    const hourly=[];
+    if(h&&h.time&&h.temperature_2m){
+      for(let i=0;i<Math.min(8,h.time.length);i++){
+        hourly.push({
+          dtMs:new Date(h.time[i]).getTime(),
+          temp:h.temperature_2m[i],
+          weather_code:h.weather_code?h.weather_code[i]:cur.weather_code
+        });
+      }
+    }
+    wxData={
+      current:{
+        temp:cur.temperature_2m,
+        feels_like:cur.apparent_temperature,
+        humidity:cur.relative_humidity_2m,
+        wind_speed:cur.wind_speed_10m,
+        uvi:cur.uv_index!=null?cur.uv_index:null,
+        weather_code:cur.weather_code
+      },
+      hourly
+    };
+    wxLastFetch=now;
     renderWeather(wxData);
-    checkWeatherAlerts(wxData);
-  } catch { document.getElementById('WX-desc').textContent = 'Weather unavailable'; }
+    fetchNwsAlerts();
+  }catch{
+    descEl.textContent='Weather unavailable — tap ↺ Refresh';
+    document.getElementById('WX-temp').textContent='--°F';
+  }
 }
 
-function weatherIcon(code) {
-  const key = code?.slice(0,2);
-  return WX_ICONS[key] || '🌡️';
-}
-
-function renderWeather(d) {
-  const c = d.current;
-  document.getElementById('WX-icon').textContent = weatherIcon(c.weather?.[0]?.icon);
-  document.getElementById('WX-temp').textContent = Math.round(c.temp) + '°F';
-  document.getElementById('WX-desc').textContent = c.weather?.[0]?.description || '';
-  document.getElementById('WX-details').innerHTML = `
+function renderWeather(d){
+  const c=d.current;
+  const wc=c.weather_code;
+  document.getElementById('WX-icon').textContent=wmoEmoji(wc);
+  document.getElementById('WX-temp').textContent=Math.round(c.temp)+'°F';
+  document.getElementById('WX-desc').textContent=wmoDescription(wc);
+  const uv=c.uvi!=null&&c.uvi!==undefined?Math.round(c.uvi*10)/10:'—';
+  document.getElementById('WX-details').innerHTML=`
     <div class="weather-detail"><strong>${Math.round(c.feels_like)}°F</strong>Feels like</div>
-    <div class="weather-detail"><strong>${c.humidity}%</strong>Humidity</div>
-    <div class="weather-detail"><strong>${Math.round((c.wind_speed||0)*1.15)}</strong>Wind mph</div>
-    <div class="weather-detail"><strong>${c.uvi||0}</strong>UV index</div>`;
-  // Hourly forecast (next 8h)
-  const strip = document.getElementById('WX-forecast');
-  const hourly = (d.hourly||[]).slice(0,8);
-  strip.innerHTML = hourly.map(h => {
-    const t = new Date(h.dt*1000);
-    const hr = t.getHours();
-    const label = hr===0?'12a':hr<12?hr+'a':hr===12?'12p':(hr-12)+'p';
-    return `<div class="forecast-item">
+    <div class="weather-detail"><strong>${Math.round(c.humidity)}%</strong>Humidity</div>
+    <div class="weather-detail"><strong>${Math.round(c.wind_speed||0)}</strong>Wind mph</div>
+    <div class="weather-detail"><strong>${uv}</strong>UV index</div>`;
+  const strip=document.getElementById('WX-forecast');
+  const hourly=(d.hourly||[]).slice(0,8);
+  strip.innerHTML=hourly.map(ht=>{
+    const t=new Date(ht.dtMs);
+    const hr=t.getHours();
+    const label=hr===0?'12a':hr<12?hr+'a':hr===12?'12p':(hr-12)+'p';
+    return`<div class="forecast-item">
       <div class="forecast-time">${label}</div>
-      <div class="forecast-icon">${weatherIcon(h.weather?.[0]?.icon)}</div>
-      <div class="forecast-temp">${Math.round(h.temp)}°</div>
+      <div class="forecast-icon">${wmoEmoji(ht.weather_code)}</div>
+      <div class="forecast-temp">${Math.round(ht.temp)}°</div>
     </div>`;
   }).join('');
 }
 
-function renderWeatherMock() {
-  // Demo data when no API key set
-  document.getElementById('WX-icon').textContent = '⛅';
-  document.getElementById('WX-temp').textContent = '82°F';
-  document.getElementById('WX-desc').textContent = 'partly cloudy · Add OpenWeatherMap key for live data';
-  document.getElementById('WX-details').innerHTML = `
-    <div class="weather-detail"><strong>79°F</strong>Feels like</div>
-    <div class="weather-detail"><strong>65%</strong>Humidity</div>
-    <div class="weather-detail"><strong>12</strong>Wind mph</div>
-    <div class="weather-detail"><strong>7</strong>UV index</div>`;
-  const hrs = ['11a','12p','1p','2p','3p','4p','5p','6p'];
-  const temps = [80,83,85,86,84,82,79,76];
-  const icons = ['⛅','🌤️','☀️','☀️','⛅','🌦️','🌧️','⛈️'];
-  document.getElementById('WX-forecast').innerHTML = hrs.map((h,i)=>
-    `<div class="forecast-item"><div class="forecast-time">${h}</div><div class="forecast-icon">${icons[i]}</div><div class="forecast-temp">${temps[i]}°</div></div>`
-  ).join('');
-}
-
-function checkWeatherAlerts(d) {
-  const alerts = d.alerts || [];
-  const alertEl = document.getElementById('WX-alert');
-  const alertText = document.getElementById('WX-alert-text');
-  if (alerts.length) {
-    const a = alerts[0];
+async function fetchNwsAlerts(){
+  const alertEl=document.getElementById('WX-alert'),alertText=document.getElementById('WX-alert-text');
+  try{
+    const r=await fetch(`https://api.weather.gov/alerts/active?point=${WX_LAT},${WX_LON}`,{
+      headers:{'Accept':'application/geo+json','User-Agent':'TheDugoutCommandCenter/1.0 (github.com/clubprez/Leadoff-Lounge-)'}
+    });
+    if(!r.ok){alertEl.classList.remove('show');return;}
+    const j=await r.json();
+    const feats=j.features||[];
+    if(!feats.length){alertEl.classList.remove('show');return;}
+    const p=feats[0].properties||{};
+    const head=(p.headline||p.event||'Weather alert').trim();
+    const desc=(p.description||'').replace(/\s+/g,' ').trim().slice(0,160);
     alertEl.classList.add('show');
-    alertText.textContent = a.event + (a.description ? ' — ' + a.description.slice(0,120) : '');
-    // Push as urgent announcement
-    postAnnouncement && toast('⛈️ Weather Alert', a.event, 'err');
-  } else {
+    alertText.textContent=head+(desc?' — '+desc:'');
+  }catch{
     alertEl.classList.remove('show');
   }
 }
