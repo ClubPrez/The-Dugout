@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+M<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -344,6 +344,14 @@ tr.it-acc td{background:var(--grl);padding:16px 18px !important;border-top:none 
 .it-acc-hdr{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
 .it-acc-grid{display:grid;grid-template-columns:140px 1fr;gap:10px 14px;align-items:start;margin-top:12px;}
 .it-acc-grid label{font-size:12px;font-weight:600;color:var(--tm);text-transform:uppercase;letter-spacing:0.06em;padding-top:8px;}
+.it-acc-section{margin-bottom:16px;}
+.it-acc-seclbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--tm);margin-bottom:6px;}
+.it-acc-hint{font-size:12px;color:var(--tt);margin:0 0 8px 0;line-height:1.45;}
+.it-acc-lead{font-size:13px;color:var(--tm);margin:0 0 14px 0;line-height:1.5;}
+.it-row-name{font-weight:600;color:var(--text);max-width:min(320px,36vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+td.it-row-name{cursor:pointer;}
+td.it-row-name:hover{text-decoration:underline;text-decoration-color:var(--tm);}
+.it-row-ph{color:var(--tt);font-weight:500;}
 .it-acc-meta{font-size:11px;color:var(--tt);}
 .it-drag-cell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px !important;width:52px;}
 .it-drag-h{cursor:grab;color:var(--tt);font-size:15px;line-height:1;letter-spacing:-2px;user-select:none;padding:6px 8px;border-radius:6px;display:inline-block;touch-action:none;}
@@ -1837,7 +1845,7 @@ tr.it-dragging{opacity:0.55;}
   <div class="cx" id="cx-fb"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('fb')">+ Add item</button></div>
   <div id="comm-budget-bar-fb"></div>
-  <div class="iw"><table class="it" id="tbl-fb"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:20%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est. Budget</th><th style="width:11%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="iw"><table class="it" id="tbl-fb"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est.</th><th style="width:11%">Actual</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-fb"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-fb"></div>
 </div>
@@ -1846,7 +1854,7 @@ tr.it-dragging{opacity:0.55;}
   <div class="cx" id="cx-inv"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('inv')">+ Add item</button></div>
   <div id="comm-budget-bar-inv"></div>
-  <div class="iw"><table class="it" id="tbl-inv"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:20%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est. Budget</th><th style="width:11%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="iw"><table class="it" id="tbl-inv"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est.</th><th style="width:11%">Actual</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-inv"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-inv"></div>
 </div>
@@ -1855,7 +1863,7 @@ tr.it-dragging{opacity:0.55;}
   <div class="cx" id="cx-mkt"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('mkt')">+ Add item</button></div>
   <div id="comm-budget-bar-mkt"></div>
-  <div class="iw"><table class="it" id="tbl-mkt"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:20%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est. Budget</th><th style="width:11%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="iw"><table class="it" id="tbl-mkt"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est.</th><th style="width:11%">Actual</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-mkt"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-mkt"></div>
 </div>
@@ -1864,7 +1872,7 @@ tr.it-dragging{opacity:0.55;}
   <div class="cx" id="cx-gx"></div>
   <div class="sh">Inventory <button class="ab" onclick="addItem('gx')">+ Add item</button></div>
   <div id="comm-budget-bar-gx"></div>
-  <div class="iw"><table class="it" id="tbl-gx"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:20%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est. Budget</th><th style="width:11%">Actual Spend</th><th>Notes</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
+  <div class="iw"><table class="it" id="tbl-gx"><thead><tr><th style="width:52px" title="Drag ⋮⋮ or use arrows">Order</th><th style="width:34px"></th><th style="width:56px"></th><th style="width:22%">Item</th><th style="width:8%">Qty</th><th style="width:11%">Status</th><th style="width:11%">Est.</th><th style="width:11%">Actual</th><th style="width:32px"></th></tr></thead><tbody></tbody></table></div>
   <div class="mg" id="mg-gx"></div>
   <div class="sh">Responsibilities</div><div class="rl" id="rl-gx"></div>
 </div>
@@ -1880,6 +1888,7 @@ tr.it-dragging{opacity:0.55;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
+/* Supabase — run once (SQL editor): ALTER TABLE public.items ADD COLUMN IF NOT EXISTS proposal_note text; */
 const SBU='https://lcqevefzbotmxtjbpgvl.supabase.co';
 const SBK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjcWV2ZWZ6Ym90bXh0amJwZ3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDkzMTMsImV4cCI6MjA5MTA4NTMxM30.cudkKvAsddpVCPdXrstDeZfR2VqA9Vx8nLuQVUZZD80';
 const sb=supabase.createClient(SBU,SBK);
@@ -2717,6 +2726,7 @@ function rT(k){
     const varStyle=variance===null?'color:var(--tm)':(variance>0?'color:var(--red);font-weight:600':'color:var(--green);font-weight:600');
     const varText=variance===null?'':(variance>0?`▲ ${fmt$(Math.abs(variance))}`:(variance<0?`▼ ${fmt$(Math.abs(variance))}`:'On budget'));
     const tr=document.createElement('tr');tr.className='it-main';tr.dataset.itemId=item.id;
+    const rowTitle=item.name?esc(item.name):'<span class="it-row-ph">Untitled — open for details</span>';
     tr.innerHTML=`
       <td class="it-drag-cell">
         <span class="it-drag-h" draggable="true" title="Drag to reorder priority">⋮⋮</span>
@@ -2727,7 +2737,7 @@ function rT(k){
       </td>
       <td><button type="button" class="it-acc-tog" aria-expanded="false" aria-label="Expand details" onclick="toggleInvAcc(event,'${item.id}','${k}')">▶</button></td>
       <td class="ic" onclick="event.stopPropagation();openCard('${item.id}','${k}')">${thumbHtml(item.id,item.name)}</td>
-      <td><input class="ni" type="text" value="${esc(item.name)}" placeholder="Item name" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','name',this.value)"></td>
+      <td class="it-row-name">${rowTitle}</td>
       <td><input class="qi" type="text" value="${esc(item.qty)}" placeholder="—" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','qty',this.value)"></td>
       <td><select class="ssel ${scls(item.status)}" onclick="event.stopPropagation()" onchange="uf('${item.id}','status',this.value);this.className='ssel '+scls(this.value)">
         <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
@@ -2758,8 +2768,11 @@ function rT(k){
           ${variance!==null?`<span style="font-size:11px;${varStyle};white-space:nowrap;">${varText}</span>`:''}
         </div>
       </td>
-      <td><input class="noi" type="text" value="${esc(item.note)}" placeholder="Notes…" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)"></td>
       <td onclick="event.stopPropagation()"><button class="db" onclick="delItem('${item.id}')">×</button></td>`;
+    tr.addEventListener('click',e=>{
+      if(e.target.closest('input,select,button,.it-drag-h,.it-nudge-btn,.ic,.it-acc-tog,.db'))return;
+      toggleInvAcc(e,item.id,k);
+    });
     const grip=tr.querySelector('.it-drag-h');
     if(grip){
       grip.addEventListener('dragstart',e=>{
@@ -2781,30 +2794,41 @@ function rT(k){
     tbody.appendChild(tr);
     const meta=(item.created_at||item.updated_at)?`<div class="it-acc-meta">Record ${item.updated_at?'updated':'added'} ${new Date(item.updated_at||item.created_at).toLocaleString()}</div>`:'';
     const acc=document.createElement('tr');acc.className='it-acc';acc.style.display='none';acc.dataset.itemId=item.id;
-    acc.innerHTML=`<td colspan="10">
+    acc.innerHTML=`<td colspan="9">
       <div class="it-acc-w">
         <div class="it-acc-hdr">
           <span style="font-family:var(--font-condensed);font-size:18px;font-weight:700;color:var(--text);">${esc(item.name)||'Untitled item'}</span>
           <span style="font-size:13px;color:var(--tm);font-weight:600;">Priority ${pri} of ${nTot}</span>
         </div>
-        <p style="font-size:12px;color:var(--tm);margin:0 0 4px 0;">Committee inventory — anyone on the team with access to this dashboard can edit (same as the row above).</p>
+        <p class="it-acc-lead">Full line-item detail, operational notes, and committee proposal comments live <strong>only in this panel</strong> — the row above stays compact for scanning.</p>
+        <p style="font-size:12px;color:var(--tm);margin:0 0 10px 0;">Anyone with access to this dashboard can edit (same permissions as the rest of the app).</p>
         ${meta}
+        <label class="it-acc-seclbl">Item name</label>
+        <input class="mi inv-name" type="text" value="${esc(item.name)}" placeholder="Item name" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','name',this.value)" style="margin-bottom:14px;">
+        <div class="it-acc-section">
+          <div class="it-acc-seclbl">Operational notes</div>
+          <p class="it-acc-hint">Logistics, timing, vendors, sourcing, day-of execution…</p>
+          <textarea class="mi ta inv-note" rows="5" placeholder="Specific operational detail for this line…" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)">${esc(item.note)}</textarea>
+        </div>
+        <div class="it-acc-section">
+          <div class="it-acc-seclbl">Committee proposal</div>
+          <p class="it-acc-hint">Why this committee is proposing this item — strategy, approvals, sponsor alignment, community impact…</p>
+          <textarea class="mi ta inv-proposal" rows="5" placeholder="Committee rationale and comments…" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','proposal_note',this.value)">${esc(item.proposal_note||'')}</textarea>
+        </div>
         <div class="it-acc-grid">
-          <label>Notes</label>
-          <textarea class="mi ta" rows="4" placeholder="Timing, vendors, risks…" onclick="event.stopPropagation()" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)">${esc(item.note)}</textarea>
           <label>Qty</label>
-          <input class="mi" type="text" value="${esc(item.qty)}" onclick="event.stopPropagation()" onchange="uf('${item.id}','qty',this.value)">
+          <input class="mi inv-qty" type="text" value="${esc(item.qty)}" onclick="event.stopPropagation()" onchange="uf('${item.id}','qty',this.value)">
           <label>Status</label>
-          <select class="mi" style="padding:10px 12px;" onclick="event.stopPropagation()" onchange="uf('${item.id}','status',this.value)">
+          <select class="mi inv-st" style="padding:10px 12px;" onclick="event.stopPropagation()" onchange="uf('${item.id}','status',this.value)">
             <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
             <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
             <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
             <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
           </select>
           <label>Est. budget</label>
-          <input class="mi" type="number" min="0" step="0.01" value="${est||''}" onclick="event.stopPropagation()" onchange="ufBudget('${item.id}','estimated_budget',this.value)">
+          <input class="mi inv-num" type="number" min="0" step="0.01" value="${est||''}" onclick="event.stopPropagation()" onchange="ufBudget('${item.id}','estimated_budget',this.value)">
           <label>Actual spend</label>
-          <div onclick="event.stopPropagation()"><input class="mi" type="number" min="0" step="0.01" value="${act||''}" onclick="event.stopPropagation()" onchange="ufSpend('${item.id}',this.value)" style="max-width:200px;display:inline-block;">
+          <div onclick="event.stopPropagation()"><input class="mi inv-num" type="number" min="0" step="0.01" value="${act||''}" onclick="event.stopPropagation()" onchange="ufSpend('${item.id}',this.value)" style="max-width:200px;display:inline-block;">
           ${locked?` <button type="button" class="hbtn" style="margin-left:8px;padding:6px 10px;font-size:12px;" onclick="unlockSpend('${item.id}')">Unlock auto from receipts</button>`:''}</div>
         </div>
         <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -3088,24 +3112,25 @@ function syncInvDuplicateFields(id,k){
   const main=document.querySelector(`#tbl-${k} tr.it-main[data-item-id="${id}"]`);
   const acc=document.querySelector(`#tbl-${k} tr.it-acc[data-item-id="${id}"]`);
   if(main){
-    const ni=main.querySelector('.ni');if(ni)ni.value=item.name||'';
+    const nm=main.querySelector('.it-row-name');if(nm)nm.innerHTML=item.name?esc(item.name):'<span class="it-row-ph">Untitled item — open details</span>';
     const qi=main.querySelector('.qi');if(qi)qi.value=item.qty||'';
-    const noi=main.querySelector('.noi');if(noi)noi.value=item.note||'';
     const ss=main.querySelector('.ssel');if(ss){ss.value=item.status||'tbd';ss.className='ssel '+scls(item.status);}
   }
   if(acc){
-    const ta=acc.querySelector('textarea.mi.ta');if(ta)ta.value=item.note||'';
-    const qtyIn=acc.querySelector('input.mi[type="text"]');if(qtyIn)qtyIn.value=item.qty||'';
-    const sel=acc.querySelector('select.mi');if(sel)sel.value=item.status||'tbd';
-    const nums=acc.querySelectorAll('input.mi[type="number"]');
+    const nameIn=acc.querySelector('input.inv-name');if(nameIn)nameIn.value=item.name||'';
+    const n1=acc.querySelector('textarea.inv-note');if(n1)n1.value=item.note||'';
+    const n2=acc.querySelector('textarea.inv-proposal');if(n2)n2.value=item.proposal_note||'';
+    const qtyIn=acc.querySelector('input.inv-qty');if(qtyIn)qtyIn.value=item.qty||'';
+    const sel=acc.querySelector('select.inv-st');if(sel)sel.value=item.status||'tbd';
+    const nums=acc.querySelectorAll('input.inv-num');
     if(nums[0])nums[0].value=item.estimated_budget!=null&&item.estimated_budget!==''?Number(item.estimated_budget):'';
     if(nums[1])nums[1].value=item.actual_spend!=null&&item.actual_spend!==''?Number(item.actual_spend):'';
     const hdr=acc.querySelector('.it-acc-hdr span:first-child');if(hdr)hdr.textContent=item.name||'Untitled item';
   }
 }
-async function uf(id,field,value){const item=items.find(i=>i.id===id);if(item)item[field]=value;if(['name','qty','note','status'].includes(field)&&item)syncInvDuplicateFields(id,item.committee);if(field==='name'){refreshThumb(id,value);rG(items.find(i=>i.id===id)?.committee);}rOV();clearTimeout(dbt['i'+id+field]);dbt['i'+id+field]=setTimeout(async()=>await sb.from('items').update({[field]:value}).eq('id',id),600);}
+async function uf(id,field,value){const item=items.find(i=>i.id===id);if(item)item[field]=value;if(['name','qty','note','status','proposal_note'].includes(field)&&item)syncInvDuplicateFields(id,item.committee);if(field==='name'){refreshThumb(id,value);rG(items.find(i=>i.id===id)?.committee);}rOV();clearTimeout(dbt['i'+id+field]);dbt['i'+id+field]=setTimeout(async()=>await sb.from('items').update({[field]:value}).eq('id',id),600);}
 async function tr2(id,done){const r=resps.find(r=>r.id===id);if(r)r.done=done;const el=document.querySelector(`.ri[data-id="${id}"]`);if(el){el.classList.toggle('done',done);el.querySelector('.rt').style.textDecoration=done?'line-through':'';}rOV();await sb.from('responsibilities').update({done}).eq('id',id);}
-async function addItem(k){const max=Math.max(0,...items.filter(i=>i.committee===k).map(i=>i.sort_order));const{data:nr}=await sb.from('items').insert({committee:k,name:'',qty:'',status:'tbd',note:'',sort_order:max+1}).select().single();if(nr){items.push(nr);rT(k);rG(k);setTimeout(()=>document.querySelector('#tbl-'+k+' tbody tr:last-child input')?.focus(),50);}}
+async function addItem(k){const max=Math.max(0,...items.filter(i=>i.committee===k).map(i=>i.sort_order));const{data:nr}=await sb.from('items').insert({committee:k,name:'',qty:'',status:'tbd',note:'',proposal_note:'',sort_order:max+1}).select().single();if(nr){items.push(nr);rT(k);rG(k);setTimeout(()=>{setInvAccOpen(nr.id,k,true);document.querySelector('#tbl-'+k+' tr.it-acc[data-item-id="'+nr.id+'"] input.inv-name')?.focus();},60);}}
 async function delItem(id){const item=items.find(i=>i.id===id);if(!item)return;items=items.filter(i=>i.id!==id);rT(item.committee);rG(item.committee);rOV();await sb.from('items').delete().eq('id',id);}
 async function resetAll(){if(!confirm('Reset ALL inventory data? Sponsor profiles and receipts will NOT be deleted.'))return;await sb.from('items').delete().neq('id','00000000-0000-0000-0000-000000000000');await sb.from('responsibilities').delete().neq('id','00000000-0000-0000-0000-000000000000');await seedInv();}
 
