@@ -1548,7 +1548,7 @@ tr.it-dragging{opacity:0.55;}
     <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Meeting Intelligence</div>
     <button class="btn btn-primary" onclick="createMeeting()">+ New meeting</button>
   </div>
-  <div class="al al-b" style="margin-bottom:14px;"><strong>Record or paste any meeting transcript</strong> — Claude extracts the summary, decisions, and action items, then you push tasks to committee boards. Paste works from Fireflies (same field as “Paste”: copy transcript or summary block). AI runs in a Supabase Edge Function (<code style="font-size:12px;">analyze-meeting</code>) with your Anthropic key stored as a secret, not in the browser.</div>
+  <div class="al al-b" style="margin-bottom:14px;"><strong>Record or paste any meeting transcript</strong> — Gemini extracts the summary, decisions, and action items, then you push tasks to committee boards. Paste works from Fireflies (same field as “Paste”: copy transcript or summary block). AI runs in a Supabase Edge Function (<code style="font-size:12px;">analyze-meeting</code>) with your Gemini API key stored as a Supabase secret, not in the browser.</div>
 
   <div class="mtg-layout">
     <!-- LEFT: meeting list -->
@@ -1892,7 +1892,7 @@ tr.it-dragging{opacity:0.55;}
 const SBU='https://lcqevefzbotmxtjbpgvl.supabase.co';
 const SBK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjcWV2ZWZ6Ym90bXh0amJwZ3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDkzMTMsImV4cCI6MjA5MTA4NTMxM30.cudkKvAsddpVCPdXrstDeZfR2VqA9Vx8nLuQVUZZD80';
 const sb=supabase.createClient(SBU,SBK);
-/** Meeting AI: deploy `supabase/functions/analyze-meeting`, then set Edge secret ANTHROPIC_API_KEY (Dashboard → Edge Functions → Secrets). */
+/** Meeting AI: deploy `supabase/functions/analyze-meeting`, then set Edge secret GEMINI_API_KEY (Google AI Studio → Dashboard → Edge Functions → Secrets). */
 
 // ── STATE ──
 let items=[],resps=[],sponsors=[],budgetAreas=[],receipts=[],receiptItems=[],assets=[];
@@ -4551,12 +4551,13 @@ async function processMeeting(){
         committee,
         attendees,
         meeting_date:m.meeting_date||null
-      }
+      },
+      headers:{Authorization:`Bearer ${SBK}`,apikey:SBK}
     });
     setMtgStep(3);
 
     if(fnErr){
-      throw new Error(fnErr.message||'Edge Function error — deploy analyze-meeting and set ANTHROPIC_API_KEY secret');
+      throw new Error(fnErr.message||'Edge Function error — deploy analyze-meeting and set GEMINI_API_KEY secret');
     }
     if(result&&typeof result==='object'&&result.error){
       throw new Error(typeof result.error==='string'?result.error:JSON.stringify(result.error));
@@ -4598,7 +4599,11 @@ async function processMeeting(){
   }catch(err){
     document.getElementById('MTG-processing').style.display='none';
     document.getElementById('MTG-input-section').style.display='block';
-    toast('Analysis failed',err.message||String(err),'err');
+    const raw=err?.message||String(err);
+    const hint=raw==='Failed to fetch'||raw.includes('fetch')
+      ?' Network blocked the request to Supabase. Use the real site URL (https…), hard-refresh (Cmd+Shift+R), redeploy analyze-meeting with verify_jwt=false (see supabase/config.toml), and confirm Edge secret GEMINI_API_KEY.'
+      :'';
+    toast('Analysis failed',raw+hint,'err');
   }
 }
 

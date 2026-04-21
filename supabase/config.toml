@@ -1,0 +1,4 @@
+# Deployed with `supabase functions deploy …`. Lets the browser call this function using
+# the public anon key (dashboard has no Supabase Auth login yet).
+[functions.analyze-meeting]
+verify_jwt = false

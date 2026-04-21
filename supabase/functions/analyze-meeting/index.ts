@@ -5,6 +5,9 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Override via secret GEMINI_MODEL if needed (e.g. gemini-1.5-flash). */
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+
 type Body = {
   transcript?: string;
   title?: string;
@@ -28,12 +31,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({
           error:
-            "ANTHROPIC_API_KEY missing — add it under Supabase Dashboard → Edge Functions → Secrets",
+            "GEMINI_API_KEY missing — add it under Supabase Dashboard → Edge Functions → Secrets (get a key from Google AI Studio)",
         }),
         { status: 500, headers: { ...cors, "Content-Type": "application/json" } },
       );
@@ -86,17 +89,20 @@ RULES:
 - Decisions are things that were agreed on, not things that need to happen
 - Priority: urgent = needs to happen before next meeting, high = this week, medium = this month, low = general backlog`;
 
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    const model =
+      Deno.env.get("GEMINI_MODEL")?.trim() || DEFAULT_GEMINI_MODEL;
+    const url =
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+
+    const resp = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4000,
-        messages: [{ role: "user", content: prompt }],
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 8192,
+          temperature: 0.3,
+        },
       }),
     });
 
@@ -104,16 +110,27 @@ RULES:
     if (!resp.ok) {
       const msg =
         d?.error?.message ||
-        d?.error?.type ||
-        JSON.stringify(d).slice(0, 400);
+        JSON.stringify(d?.error || d).slice(0, 500);
       return new Response(JSON.stringify({ error: msg }), {
         status: 502,
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
 
+    const blocked = d.promptFeedback?.blockReason;
+    if (blocked) {
+      return new Response(
+        JSON.stringify({
+          error: `Content blocked (${blocked}). Try shorter transcript or adjust phrasing.`,
+        }),
+        { status: 400, headers: { ...cors, "Content-Type": "application/json" } },
+      );
+    }
+
     const raw =
-      d.content?.map((c: { text?: string }) => c.text || "").join("") || "";
+      d.candidates?.[0]?.content?.parts
+        ?.map((p: { text?: string }) => p.text || "")
+        .join("") || "";
     const txt = raw.replace(/```json|```/g, "").trim();
     let result: Record<string, unknown>;
     try {
@@ -121,7 +138,8 @@ RULES:
     } catch {
       return new Response(
         JSON.stringify({
-          error: "Claude did not return valid JSON. Try again or shorten the transcript.",
+          error:
+            "Model did not return valid JSON. Try again or shorten the transcript.",
           raw_preview: txt.slice(0, 500),
         }),
         { status: 502, headers: { ...cors, "Content-Type": "application/json" } },
