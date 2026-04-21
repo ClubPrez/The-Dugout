@@ -5995,5 +5995,33 @@ async function submitAddAsset(){
   }
 }
 </script>
-</body>
+<div id="asset-upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:18px;font-weight:700;">Add Asset</div>
+      <button onclick="closeAddAsset()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">×</button>
+    </div>
+    <input id="aum-name" type="text" placeholder="Asset name (e.g. Leadoff Lounge Logo 2026)" style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;width:100%;box-sizing:border-box;"/>
+    <select id="aum-cat" style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;background:white;">
+      <option value="logo">Logo</option>
+      <option value="mockup">Mockup</option>
+      <option value="video">Video</option>
+      <option value="photo">Photo</option>
+      <option value="web">Web asset</option>
+      <option value="other" selected>Other</option>
+    </select>
+    <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Option A — Upload file</div>
+    <div id="aum-dropzone" onclick="document.getElementById('aum-file').click()" ondragover="event.preventDefault()" ondrop="event.preventDefault();document.getElementById('aum-file').files=event.dataTransfer.files;handleAumFile()" style="border:2px dashed #cbd5e1;border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:#94a3b8;font-size:14px;">Drop file here or click to browse</div>
+    <input id="aum-file" type="file" style="display:none" onchange="handleAumFile()"/>
+    <div id="aum-preview"></div>
+    <div id="aum-progress-wrap" style="display:none;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+      <div id="aum-progress" style="height:100%;background:#16a34a;width:0%;transition:width .3s ease;"></div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Option B — Paste URL</div>
+    <input id="aum-url" type="text" placeholder="https://..." style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;width:100%;box-sizing:border-box;"/>
+    <div id="aum-error" style="font-size:13px;color:#ef4444;min-height:18px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeAddAsset()" style="flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:14px;color:#64748b;">Cancel</button>
+      <button id="aum-submit" onclick="submitAddAsset()" style="flex:2;padding:10px;border-radius:10px;border:none;background:#16a34a;color:white;font-size:14px;font-weight:600;cursor:pointe
+      </body>
 </html>
