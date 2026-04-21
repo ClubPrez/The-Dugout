@@ -307,6 +307,14 @@ body{font-family:var(--font);background:#eef0f4;color:var(--text);font-size:17px
 .add-asset-card{border:2px dashed var(--grb);cursor:pointer;align-items:center;justify-content:center;flex-direction:column;gap:6px;min-height:160px;display:flex;}
 .add-asset-card:hover{border-color:#93c5fd;background:var(--bl);}
 .add-asset-card span{font-size:13px;color:var(--tm);}
+#asset-upload-modal{position:fixed;inset:0;z-index:520;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;padding:16px;}
+#asset-upload-modal .aum-card{background:white;border-radius:16px;max-width:440px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.22);}
+#asset-upload-modal .aum-card h3{font-family:var(--font-condensed);font-size:18px;margin-bottom:14px;}
+#asset-upload-modal .aum-card label{display:block;font-size:12px;font-weight:600;color:var(--tm);margin:10px 0 5px;}
+#asset-upload-modal .aum-card .mi{margin-bottom:0;}
+#aum-preview{margin-top:10px;min-height:0;}
+#aum-progress-wrap{margin-top:12px;}
+#aum-error{margin-top:10px;color:var(--red);font-size:13px;min-height:20px;}
 
 /* ── COMMITTEE PANELS ── */
 .ctrow{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
@@ -1073,9 +1081,38 @@ tr.it-dragging{opacity:0.55;}
 .ann-act{font-size:11px;color:var(--tm);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font);transition:color .12s;}
 .ann-act:hover{color:var(--text);}
 .ann-act.del:hover{color:var(--red);}
+/* ── AUTH GATE (production) ── */
+body.pre-auth > *:not(#auth-gate){display:none!important;}
+#auth-gate{display:none;position:fixed;inset:0;z-index:100000;background:linear-gradient(160deg,var(--navy) 0%,#0a1628 100%);color:white;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+.auth-card{max-width:420px;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px 24px;}
+.auth-card h2{font-family:var(--font-condensed);font-size:22px;margin-bottom:6px;}
+.auth-card > p:first-of-type{font-size:14px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.5;}
+.auth-btn{width:100%;padding:12px 16px;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:none;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;transition:opacity .15s;}
+.auth-btn-google{background:white;color:#1f2937;}
+.auth-btn-fb{background:#1877f2;color:white;}
+.auth-btn:hover{opacity:.92;}
+.auth-email{width:100%;padding:11px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.2);color:white;font-size:15px;margin-bottom:10px;outline:none;box-sizing:border-box;}
+.auth-email::placeholder{color:rgba(255,255,255,.35);}
+.auth-email:focus{border-color:rgba(74,222,128,.5);}
+.auth-magic{background:var(--green);color:white;}
+.auth-foot{font-size:11px;color:rgba(255,255,255,.35);margin-top:18px;line-height:1.45;}
+.hdr-auth{font-size:12px;color:rgba(255,255,255,.45);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;}
 </style>
 </head>
 <body>
+
+<div id="auth-gate">
+  <div class="auth-card">
+    <h2>Sign in to The Dugout</h2>
+    <p>Use the email your committee has on file. Choose a provider or request a magic link.</p>
+    <button type="button" class="auth-btn auth-btn-google" onclick="signInOAuth('google')">Continue with Google</button>
+    <button type="button" class="auth-btn auth-btn-fb" onclick="signInOAuth('facebook')">Continue with Facebook</button>
+    <div style="margin:14px 0;color:rgba(255,255,255,.35);font-size:12px;">or</div>
+    <input type="email" class="auth-email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+    <button type="button" class="auth-btn auth-magic" onclick="sendMagicLink()">Email me a magic link</button>
+    <p class="auth-foot">Enable Google &amp; Facebook under Supabase → Authentication → Providers. Add your Vercel URL under URL Configuration → Redirect URLs.</p>
+  </div>
+</div>
 
 <div class="ls" id="LS"><div class="spin"></div><h2>The Dugout 2026</h2><p id="LM">Connecting…</p></div>
 
@@ -1150,7 +1187,9 @@ tr.it-dragging{opacity:0.55;}
         <div class="hs"><div class="hs-n" id="H-total">$0</div><div class="hs-l">Total spent</div></div>
         <div class="hs"><div class="hs-n" id="H-share">$0</div><div class="hs-l">Per sponsor</div></div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span class="hdr-auth" id="hdr-auth-email" style="display:none;"></span>
+        <button type="button" class="hbtn" id="hdr-signout-btn" style="display:none;" onclick="signOutUser()">Sign out</button>
         <button class="ann-bell" id="ANN-bell" onclick="openDrawer()" title="Team announcements">
           📣
           <span class="ann-badge" id="ANN-badge" style="display:none"></span>
@@ -1704,7 +1743,7 @@ tr.it-dragging{opacity:0.55;}
     <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Asset Library</div>
     <button class="btn btn-primary" onclick="openAddAsset()">+ Add asset</button>
   </div>
-  <div class="al al-b" style="margin-bottom:14px;"><strong>Phase 1:</strong> Add assets by URL. Phase 2 will add direct file upload (logos, videos, mockups) via Supabase Storage.</div>
+  <div class="al al-b" style="margin-bottom:14px;"><strong>Asset library:</strong> Upload files to Supabase Storage (<code style="font-size:12px;">leadoff-assets</code> bucket) or paste an external URL. Ensure storage policies allow authenticated uploads.</div>
   <div class="asset-cats" id="ACats">
     <div class="acat active" onclick="filterAssets('all')">All</div>
     <div class="acat" onclick="filterAssets('logo')">Logos</div>
@@ -1715,6 +1754,38 @@ tr.it-dragging{opacity:0.55;}
     <div class="acat" onclick="filterAssets('other')">Other</div>
   </div>
   <div class="asset-grid" id="AG"></div>
+</div>
+
+<div id="asset-upload-modal" role="dialog" aria-modal="true" aria-labelledby="aum-title" onclick="if(event.target===this)closeAddAsset()">
+  <div class="aum-card" onclick="event.stopPropagation()">
+    <h3 id="aum-title">Add asset</h3>
+    <label for="aum-name">Name</label>
+    <input type="text" class="mi" id="aum-name" placeholder="e.g. Sponsor hero logo" autocomplete="off">
+    <label for="aum-url">URL (optional if uploading a file)</label>
+    <input type="url" class="mi" id="aum-url" placeholder="https://…">
+    <label for="aum-cat">Category</label>
+    <select class="mi" id="aum-cat" style="cursor:pointer;">
+      <option value="other">Other</option>
+      <option value="logo">Logo</option>
+      <option value="mockup">Mockup</option>
+      <option value="video">Video</option>
+      <option value="web">Web</option>
+      <option value="photo">Photo</option>
+    </select>
+    <label for="aum-file">File</label>
+    <input type="file" class="mi" id="aum-file" style="padding:10px;">
+    <div id="aum-preview"></div>
+    <div id="aum-progress-wrap" style="display:none;">
+      <div style="height:6px;background:var(--grl);border-radius:3px;overflow:hidden;">
+        <div id="aum-progress" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .2s;"></div>
+      </div>
+    </div>
+    <p id="aum-error"></p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button type="button" class="btn btn-secondary" onclick="closeAddAsset()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="aum-submit" onclick="submitAddAsset()">Save Asset</button>
+    </div>
+  </div>
 </div>
 
 <!-- ATTENDEES -->
@@ -1891,7 +1962,40 @@ tr.it-dragging{opacity:0.55;}
 /* Supabase — run once (SQL editor): ALTER TABLE public.items ADD COLUMN IF NOT EXISTS proposal_note text; */
 const SBU='https://lcqevefzbotmxtjbpgvl.supabase.co';
 const SBK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjcWV2ZWZ6Ym90bXh0amJwZ3ZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MDkzMTMsImV4cCI6MjA5MTA4NTMxM30.cudkKvAsddpVCPdXrstDeZfR2VqA9Vx8nLuQVUZZD80';
-const sb=supabase.createClient(SBU,SBK);
+const sb=supabase.createClient(SBU,SBK,{auth:{flowType:'pkce',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+
+/** Production domains require sign-in; localhost skips dev. Use localStorage.setItem('DUGOUT_FORCE_AUTH','1') then reload localhost to test the login gate. */
+function authRequired(){
+  if(localStorage.getItem('DUGOUT_FORCE_AUTH')==='1')return true;
+  if(/^localhost$|^127\.0\.0\.1$/.test(location.hostname))return false;
+  return true;
+}
+function authRedirectBase(){
+  const p=location.pathname.endsWith('/')&&location.pathname.length>1?location.pathname.slice(0,-1):location.pathname;
+  return location.origin+(p||'/');
+}
+async function signInOAuth(provider){
+  const{error}=await sb.auth.signInWithOAuth({provider,options:{redirectTo:authRedirectBase()}});
+  if(error)toast('Sign-in failed',error.message,'err');
+}
+async function sendMagicLink(){
+  const email=(document.getElementById('auth-email')?.value||'').trim();
+  if(!email){toast('Email required','Enter your email address','warn');return;}
+  const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:authRedirectBase()}});
+  if(error)toast('Could not send link',error.message,'err');
+  else toast('Check your email','We sent a sign-in link to '+email,'');
+}
+async function signOutUser(){
+  await sb.auth.signOut();
+  location.reload();
+}
+function updateAuthHeader(session){
+  const em=document.getElementById('hdr-auth-email'),btn=document.getElementById('hdr-signout-btn');
+  if(!session){if(em)em.style.display='none';if(btn)btn.style.display='none';return;}
+  if(em){em.textContent=session.user?.email||'';em.style.display='inline';}
+  if(btn)btn.style.display='inline-block';
+}
+let __initDone=false;
 /** Meeting AI: deploy `supabase/functions/analyze-meeting`, then set Edge secret GEMINI_API_KEY (Google AI Studio → Dashboard → Edge Functions → Secrets). */
 
 // ── STATE ──
@@ -2673,13 +2777,83 @@ function filterAssets(cat){
   rAssets();
 }
 function openAddAsset(){
-  const name=prompt('Asset name:');if(!name)return;
-  const url=prompt('URL (paste link to file or leave blank):');
-  const cat=prompt('Category (logo, mockup, video, web, photo, other):','other');
-  if(name)saveAsset({name,file_url:url||'',category:cat||'other'});
+  document.getElementById('asset-upload-modal').style.display='flex';
+  document.getElementById('aum-name').value='';
+  document.getElementById('aum-url').value='';
+  document.getElementById('aum-cat').value='other';
+  document.getElementById('aum-file').value='';
+  document.getElementById('aum-preview').innerHTML='';
+  document.getElementById('aum-error').textContent='';
+  document.getElementById('aum-progress').style.width='0%';
+  document.getElementById('aum-progress-wrap').style.display='none';
 }
+
+function closeAddAsset(){
+  document.getElementById('asset-upload-modal').style.display='none';
+}
+
+async function submitAddAsset(){
+  const name=document.getElementById('aum-name').value.trim();
+  const url=document.getElementById('aum-url').value.trim();
+  const cat=document.getElementById('aum-cat').value||'other';
+  const file=document.getElementById('aum-file').files[0];
+  const errEl=document.getElementById('aum-error');
+  const btn=document.getElementById('aum-submit');
+
+  if(!name){errEl.textContent='Please enter an asset name.';return;}
+  if(!file&&!url){errEl.textContent='Please upload a file or paste a URL.';return;}
+
+  errEl.textContent='';
+  btn.disabled=true;
+  btn.textContent='Saving…';
+
+  try{
+    let file_url=url;
+
+    if(file){
+      document.getElementById('aum-progress-wrap').style.display='block';
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const storagePath=`${cat}/${Date.now()}-${safeName}`;
+
+      const{error:upErr}=await sb.storage
+        .from('leadoff-assets')
+        .upload(storagePath,file,{cacheControl:'3600',upsert:false});
+      if(upErr)throw upErr;
+
+      document.getElementById('aum-progress').style.width='70%';
+
+      const{data:urlData}=sb.storage.from('leadoff-assets').getPublicUrl(storagePath);
+      file_url=urlData.publicUrl;
+
+      await saveAsset({
+        name,
+        file_url,
+        file_type:file.type,
+        category:cat,
+        storage_path:storagePath,
+        source:'upload',
+        file_size:file.size,
+      });
+
+      document.getElementById('aum-progress').style.width='100%';
+
+    } else {
+      await saveAsset({name,file_url,category:cat,source:'url'});
+    }
+
+    closeAddAsset();
+
+  }catch(e){
+    errEl.textContent=e.message||String(e);
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Save Asset';
+  }
+}
+
 async function saveAsset(data){
-  const{data:a}=await sb.from('assets').insert(data).select().single();
+  const{data:a,error}=await sb.from('assets').insert(data).select().single();
+  if(error)throw new Error(error.message||String(error));
   if(a){assets.push(a);rAssets();}
 }
 
@@ -5572,6 +5746,7 @@ document.addEventListener('keydown',e=>{
 
 // ── INIT ──
 async function init(){
+  if(__initDone)return;
   document.getElementById('CD').textContent=Math.max(0,Math.ceil((new Date('2026-06-12')-new Date())/86400000));
   document.getElementById('LM').textContent='Loading data…';
 
@@ -5606,6 +5781,8 @@ async function init(){
     return;
   }
 
+  __initDone=true;
+
   items=id||[];resps=rd||[];sponsors=spd||[];budgetAreas=bad||[];receipts=recd||[];receiptItems=rid||[];assets=asd||[];shifts=shd||[];
   announcements=annd||[];
   attendees=attd||[];prevAttCount=attendees.filter(a=>a.status!=='cancelled').length;
@@ -5634,6 +5811,9 @@ async function init(){
   updateEventDayTab();
   startClock();
 
+  const{data:{session:sess}}=await sb.auth.getSession();
+  updateAuthHeader(sess);
+
   // Data channel + Presence channel
   sb.channel('db')
     .on('postgres_changes',{event:'*',schema:'public',table:'items'},onItem)
@@ -5654,7 +5834,166 @@ async function init(){
 
   initPresence();
 }
-init();
+
+async function boot(){
+  document.getElementById('LM').textContent='Checking sign-in…';
+  const{data:{session}}=await sb.auth.getSession();
+  if(authRequired()&&!session){
+    document.getElementById('LS').style.display='none';
+    document.body.classList.add('pre-auth');
+    document.getElementById('auth-gate').style.display='flex';
+    return;
+  }
+  document.getElementById('auth-gate').style.display='none';
+  document.body.classList.remove('pre-auth');
+  await init();
+}
+
+sb.auth.onAuthStateChange((_event,session)=>{
+  updateAuthHeader(session);
+});
+
+boot();
+</script>
+<!-- ASSET UPLOAD MODAL -->
+<div id="asset-upload-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:460px;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:flex;flex-direction:column;gap:14px;">
+    
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:18px;font-weight:700;">Add Asset</div>
+      <button onclick="closeAddAsset()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;">×</button>
+    </div>
+
+    <input id="aum-name" type="text" placeholder="Asset name (e.g. Leadoff Lounge Logo 2026)"
+      style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;width:100%;box-sizing:border-box;"/>
+
+    <select id="aum-cat"
+      style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;background:white;">
+      <option value="logo">Logo</option>
+      <option value="mockup">Mockup</option>
+      <option value="video">Video</option>
+      <option value="photo">Photo</option>
+      <option value="web">Web asset</option>
+      <option value="other" selected>Other</option>
+    </select>
+
+    <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Option A — Upload file</div>
+    <div id="aum-dropzone"
+      onclick="document.getElementById('aum-file').click()"
+      ondragover="event.preventDefault()"
+      ondrop="event.preventDefault();document.getElementById('aum-file').files=event.dataTransfer.files;handleAumFile()"
+      style="border:2px dashed #cbd5e1;border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:#94a3b8;font-size:14px;">
+      Drop file here or click to browse
+    </div>
+    <input id="aum-file" type="file" style="display:none" onchange="handleAumFile()"/>
+    <div id="aum-preview"></div>
+
+    <div id="aum-progress-wrap" style="display:none;height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+      <div id="aum-progress" style="height:100%;background:#16a34a;width:0%;transition:width .3s ease;"></div>
+    </div>
+
+    <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Option B — Paste URL</div>
+    <input id="aum-url" type="text" placeholder="https://..."
+      style="padding:10px 14px;border-radius:10px;border:1px solid #e2e8f0;font-size:14px;width:100%;box-sizing:border-box;"/>
+
+    <div id="aum-error" style="font-size:13px;color:#ef4444;min-height:18px;"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeAddAsset()"
+        style="flex:1;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:14px;color:#64748b;">
+        Cancel
+      </button>
+      <button id="aum-submit" onclick="submitAddAsset()"
+        style="flex:2;padding:10px;border-radius:10px;border:none;background:#16a34a;color:white;font-size:14px;font-weight:600;cursor:pointer;">
+        Save Asset
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function handleAumFile(){
+  const file=document.getElementById('aum-file').files[0];
+  if(!file)return;
+  if(!document.getElementById('aum-name').value)
+    document.getElementById('aum-name').value=file.name.replace(/\.[^/.]+$/,'');
+  const prev=document.getElementById('aum-preview');
+  if(file.type.startsWith('image/')){
+    const r=new FileReader();
+    r.onload=e=>prev.innerHTML=`<img src="${e.target.result}" style="max-height:100px;max-width:100%;border-radius:8px;object-fit:contain;">`;
+    r.readAsDataURL(file);
+  } else {
+    prev.innerHTML=`<div style="font-size:13px;color:#64748b;">${file.name} (${(file.size/1024).toFixed(1)} KB)</div>`;
+  }
+  document.getElementById('aum-dropzone').style.borderColor='#16a34a';
+}
+
+function closeAddAsset(){
+  document.getElementById('asset-upload-modal').style.display='none';
+}
+
+async function submitAddAsset(){
+  const name=document.getElementById('aum-name').value.trim();
+  const url=document.getElementById('aum-url').value.trim();
+  const cat=document.getElementById('aum-cat').value||'other';
+  const file=document.getElementById('aum-file').files[0];
+  const errEl=document.getElementById('aum-error');
+  const btn=document.getElementById('aum-submit');
+
+  if(!name){errEl.textContent='Please enter an asset name.';return;}
+  if(!file&&!url){errEl.textContent='Please upload a file or paste a URL.';return;}
+
+  errEl.textContent='';
+  btn.disabled=true;
+  btn.textContent='Saving…';
+
+  try{
+    let file_url=url;
+
+    if(file){
+      document.getElementById('aum-progress-wrap').style.display='block';
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const storagePath=`${cat}/${Date.now()}-${safeName}`;
+
+      const{error:upErr}=await sb.storage
+        .from('leadoff-assets')
+        .upload(storagePath,file,{cacheControl:'3600',upsert:false});
+      if(upErr)throw upErr;
+
+      document.getElementById('aum-progress').style.width='70%';
+
+      const{data:{publicUrl}}=sb.storage
+        .from('leadoff-assets')
+        .getPublicUrl(storagePath);
+
+      file_url=publicUrl;
+
+      await saveAsset({
+        name,
+        file_url,
+        file_type:file.type,
+        category:cat,
+        storage_path:storagePath,
+        source:'upload',
+        file_size:file.size,
+      });
+
+      document.getElementById('aum-progress').style.width='100%';
+
+    } else {
+      await saveAsset({name,file_url,category:cat,source:'url'});
+    }
+
+    closeAddAsset();
+
+  }catch(e){
+    errEl.textContent=e.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Save Asset';
+  }
+}
 </script>
 </body>
 </html>
