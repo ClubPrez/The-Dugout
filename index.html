@@ -1584,6 +1584,24 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 .dm-overlay.open .dm-modal{transform:translateY(0) scale(1);}
 .dm-modal h3{font-family:var(--font-condensed);font-size:22px;font-weight:700;margin-bottom:16px;}
 .dm-ai-updating{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tm);padding:10px 0;}
+
+/* New folder button + rename */
+.fe-new-folder-btn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:7px;border:1px dashed var(--grb);background:transparent;font-family:var(--font);font-size:12px;color:var(--tm);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.fe-new-folder-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(37,99,235,0.05);}
+.fe-folder-rename{border:none;background:rgba(255,255,255,0.18);color:white;font-family:var(--font);font-size:11px;width:100%;border-radius:4px;padding:2px 5px;outline:1px solid rgba(255,255,255,0.3);}
+/* Sidebar folder item hover actions */
+.fe-sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;transition:background .12s;border-radius:7px;margin:1px 6px;position:relative;}
+.fe-sidebar-item:hover{background:rgba(37,99,235,0.07);}
+.fe-sidebar-item.active{background:rgba(37,99,235,0.12);color:var(--blue);font-weight:600;}
+.fe-sidebar-item-del{display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tt);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;}
+.fe-sidebar-item:hover .fe-sidebar-item-del{display:block;}
+.fe-sidebar-item-del:hover{color:var(--red);background:var(--rl);}
+/* Left folder sidebar */
+.fe-sidebar{width:200px;flex-shrink:0;}
+.fe-sidebar-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);padding:6px 12px 4px;}
+.fe-layout{display:flex;gap:14px;align-items:start;}
+.fe-main{flex:1;min-width:0;}
+@media(max-width:640px){.fe-layout{flex-direction:column;}.fe-sidebar{width:100%;}}
 </style>
 </head>
 <body>
@@ -2290,12 +2308,13 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 <div class="panel" id="panel-assets"
   ondragover="feDragOver(event)" ondragleave="feDragLeave(event)" ondrop="feDrop(event)">
 
-  <!-- Toolbar: breadcrumb + view toggle only — no upload buttons -->
+  <!-- Toolbar -->
   <div class="fe-toolbar">
     <div class="fe-breadcrumb" id="FE-breadcrumb">
       <span class="fe-crumb current">Asset Library</span>
     </div>
     <div style="font-size:12px;color:var(--tt);margin-right:auto;">Drop files anywhere to upload</div>
+    <button class="fe-new-folder-btn" onclick="createAssetFolder()">📁 New folder</button>
     <div class="fe-view-btns">
       <button class="fe-view-btn active" id="FE-grid-btn" onclick="setView('grid')" title="Grid view">⊞</button>
       <button class="fe-view-btn" id="FE-list-btn" onclick="setView('list')" title="List view">☰</button>
@@ -2303,15 +2322,14 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <a href="https://drive.google.com/drive/folders/1ed9elhK7bXo-96Txz_UXEA8eyTr3u0oA" target="_blank" style="font-size:12px;color:var(--tm);text-decoration:none;padding:6px 10px;border-radius:6px;border:1px solid var(--grb);background:white;white-space:nowrap;">Open Drive ↗</a>
   </div>
 
-  <!-- Hidden file input — triggered by clicking empty space -->
   <input type="file" id="ASSET-file-input" multiple accept="*/*" onchange="handleAssetUpload(this.files)">
 
-  <!-- Silent upload progress — small indicator bottom-right -->
+  <!-- Upload progress -->
   <div id="FE-upload-bar" style="display:none;position:fixed;bottom:80px;right:20px;z-index:400;
     background:rgba(11,25,41,0.9);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);
     border-radius:12px;padding:12px 16px;min-width:240px;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div id="FE-upload-spinner" style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-top-color:#22c55e;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
+      <div style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-top-color:#22c55e;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
       <div style="flex:1;">
         <div id="FE-upload-name" style="font-size:12px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;"></div>
         <div style="height:3px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;margin-top:5px;">
@@ -2322,13 +2340,22 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     </div>
   </div>
 
-  <!-- File explorer -->
-  <div id="FE-explorer" style="position:relative;min-height:400px;">
-    <div class="fe-drop-overlay" id="FE-drop-overlay">
-      <div style="font-size:48px;">📂</div>
-      <div class="fe-drop-text">Drop to upload</div>
-      <div style="font-size:13px;color:var(--blue);opacity:.7;" id="FE-drop-folder">Into current folder</div>
+  <!-- Two-column layout: sidebar + explorer -->
+  <div class="fe-layout">
+    <!-- Folder sidebar -->
+    <div class="fe-sidebar">
+      <div class="fe-sidebar-head">Folders</div>
+      <div id="FE-sidebar-list"></div>
     </div>
+
+    <!-- Main explorer -->
+    <div class="fe-main">
+      <div id="FE-explorer" style="position:relative;min-height:400px;">
+        <div class="fe-drop-overlay" id="FE-drop-overlay">
+          <div style="font-size:48px;">📂</div>
+          <div class="fe-drop-text">Drop to upload</div>
+          <div style="font-size:13px;color:var(--blue);opacity:.7;" id="FE-drop-folder">Into current folder</div>
+        </div>
 
     <!-- Grid view -->
     <div class="fe-grid" id="FE-grid" onclick="if(event.target===this||event.target.id==='FE-grid')document.getElementById('ASSET-file-input').click()"></div>
@@ -2344,7 +2371,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
       </div>
       <div class="fe-list" id="FE-list"></div>
     </div>
-  </div>
+  </div><!-- end FE-explorer -->
 
   <!-- Selection bar -->
   <div class="fe-selection-bar" id="FE-sel-bar">
@@ -2353,6 +2380,8 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <button class="fe-sel-btn danger" onclick="deleteSelected()">🗑 Delete</button>
     <button class="fe-sel-btn" onclick="clearSelection()">✕ Clear</button>
   </div>
+  </div><!-- end fe-main -->
+  </div><!-- end fe-layout -->
 </div>
 
 <!-- Context menu -->
@@ -3517,14 +3546,107 @@ let fePath = [{ id:'root', label:'Asset Library' }];
 let feSelected = new Set();
 let feCtxAsset = null;
 let currentAssetId = null;
+let customFolders = [];
 
-function rAssets() { feRender(); }
+function rAssets() { feRender(); rSidebar(); }
 function filterAssets() {}
 function openAddAsset() {}
 function saveAsset() {}
-function rFolders() {}
 
-function feRender() {
+// ── FOLDER SIDEBAR ──
+function getAllFolders() {
+  return [
+    ...FOLDERS,
+    ...customFolders.map(f => ({ id: f.id, label: f.label, icon: f.icon || '📁', custom: true }))
+  ];
+}
+
+function rSidebar() {
+  const list = document.getElementById('FE-sidebar-list'); if (!list) return;
+  const all = getAllFolders();
+  list.innerHTML = all.map(f => {
+    const isActive = feFolder === f.id;
+    const count = f.id === 'root'
+      ? assets.filter(a => a.category !== 'folder').length
+      : assets.filter(a => a.folder === f.id && a.category !== 'folder').length;
+    return `<div class="fe-sidebar-item ${isActive ? 'active' : ''}" onclick="selectAssetFolder('${f.id}','${esc(f.label)}')">
+      <span style="font-size:15px;flex-shrink:0;">${f.icon}</span>
+      <span style="font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+        ondblclick="${f.custom ? `event.stopPropagation();renameSidebarFolder('${f.id}',this)` : ''}">
+        ${esc(f.label)}
+      </span>
+      <span style="font-size:10px;color:${isActive ? 'rgba(37,99,235,0.6)' : 'var(--tt)'};">${count || ''}</span>
+      ${f.custom ? `<button class="fe-sidebar-item-del" onclick="event.stopPropagation();deleteAssetFolder('${f.id}')" title="Delete folder">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectAssetFolder(id, label) {
+  feFolder = id;
+  fePath = id === 'root'
+    ? [{ id: 'root', label: 'Asset Library' }]
+    : [{ id: 'root', label: 'Asset Library' }, { id, label }];
+  feSelected.clear();
+  rSidebar();
+  feRenderInner();
+}
+
+async function loadAssetFolders() {
+  const { data } = await sb.from('asset_folders').select('*').order('sort_order');
+  if (data) { customFolders = data; rSidebar(); }
+}
+
+async function createAssetFolder() {
+  const name = prompt('Folder name:');
+  if (!name?.trim()) return;
+  const slug = name.trim().toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,40) + '-' + Date.now().toString(36);
+  const folder = { id: slug, label: name.trim(), icon: '📁', sort_order: 99 + customFolders.length, created_by: presenceName || 'Committee' };
+  const { error } = await sb.from('asset_folders').insert(folder);
+  if (error) { toast('Error', error.message, 'err'); return; }
+  customFolders.push(folder);
+  selectAssetFolder(slug, name.trim());
+  toast('Folder created', name.trim(), '');
+}
+
+async function deleteAssetFolder(id) {
+  const folder = customFolders.find(f => f.id === id);
+  const fileCount = assets.filter(a => a.folder === id).length;
+  if (fileCount > 0) {
+    if (!confirm(`"${folder?.label}" has ${fileCount} file${fileCount !== 1 ? 's' : ''}. Delete anyway? Files will move to Misc.`)) return;
+    await sb.from('assets').update({ folder: 'misc' }).eq('folder', id);
+    assets.forEach(a => { if (a.folder === id) a.folder = 'misc'; });
+  } else {
+    if (!confirm(`Delete folder "${folder?.label}"?`)) return;
+  }
+  await sb.from('asset_folders').delete().eq('id', id);
+  customFolders = customFolders.filter(f => f.id !== id);
+  if (feFolder === id) selectAssetFolder('root', 'Asset Library');
+  else { rSidebar(); feRenderInner(); }
+  toast('Folder deleted', folder?.label || '', 'warn');
+}
+
+function renameSidebarFolder(id, el) {
+  const folder = customFolders.find(f => f.id === id); if (!folder) return;
+  const input = document.createElement('input');
+  input.value = folder.label;
+  input.style.cssText = 'background:rgba(37,99,235,0.1);color:var(--text);font-size:12px;border:1px solid #93c5fd;border-radius:4px;padding:2px 6px;width:100%;outline:none;font-family:var(--font);';
+  input.onclick = e => e.stopPropagation();
+  input.onblur = async () => {
+    const val = input.value.trim() || folder.label;
+    folder.label = val; el.textContent = val;
+    el.parentNode.replaceChild(el, input);
+    if (feFolder === id) { fePath[fePath.length-1].label = val; feRenderInner(); }
+    rSidebar();
+    await sb.from('asset_folders').update({ label: val }).eq('id', id);
+  };
+  input.onkeydown = e => { if(e.key==='Enter')input.blur(); if(e.key==='Escape'){el.parentNode.replaceChild(el,input);} };
+  el.parentNode.replaceChild(input, el);
+  input.focus(); input.select();
+}
+
+function rFolders() { loadAssetFolders(); }
+
+function feRenderInner() {
   const grid = document.getElementById('FE-grid');
   const list = document.getElementById('FE-list');
   const listWrap = document.getElementById('FE-list-wrap');
@@ -3656,6 +3778,8 @@ function feRender() {
 
   feUpdateSelBar();
 }
+
+function feRender() { feRenderInner(); rSidebar(); }
 
 function feOpenFolder(id, label) {
   feFolder = id;
