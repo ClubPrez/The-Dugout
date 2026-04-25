@@ -1537,6 +1537,53 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 .user-dd-item:hover{background:rgba(255,255,255,0.08);color:white;}
 .user-dd-item.danger{color:#f87171;}
 .user-dd-item.danger:hover{background:rgba(220,38,38,0.15);}
+
+/* ── MEETINGS UPGRADES ── */
+.mtg-new-btn{background:none;border:none;color:rgba(255,255,255,0.6);font-size:22px;font-weight:300;cursor:pointer;padding:0 4px;line-height:1;transition:color .15s;border-radius:5px;}
+.mtg-new-btn:hover{color:white;background:rgba(255,255,255,0.1);}
+.mtg-list-item.editing .mtg-list-item-title input{display:block;}
+.mtg-list-item.editing .mtg-list-item-title span{display:none;}
+.mtg-inline-rename{border:none;background:rgba(255,255,255,0.15);color:white;font-family:var(--font);font-size:13px;font-weight:500;width:100%;border-radius:4px;padding:2px 6px;outline:none;}
+/* Attendee chips */
+.mtg-attendees-chip{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 8px;}
+.mtg-att-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.mtg-att-tag{display:inline-flex;align-items:center;gap:4px;background:var(--navy);color:white;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;}
+.mtg-att-tag button{background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;padding:0;line-height:1;}
+.mtg-att-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:white;border:1px solid var(--grb);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.12);z-index:200;overflow:hidden;max-height:200px;overflow-y:auto;}
+.mtg-att-opt{padding:9px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;}
+.mtg-att-opt:hover{background:var(--grl);}
+.mtg-att-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white;flex-shrink:0;}
+/* Decision Map */
+.dm-layout{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;}
+@media(max-width:640px){.dm-layout{grid-template-columns:1fr;}}
+.dm-sidebar{background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:var(--r);overflow:hidden;box-shadow:var(--glass-shadow);position:sticky;top:80px;}
+.dm-sidebar-head{padding:12px 14px;border-bottom:1px solid var(--grb);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);}
+.dm-filter{padding:8px 14px;font-size:13px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:8px;border-radius:0;}
+.dm-filter:hover{background:rgba(37,99,235,0.05);}
+.dm-filter.active{background:rgba(37,99,235,0.1);color:var(--blue);font-weight:600;}
+.dm-filter-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dm-grid{display:flex;flex-direction:column;gap:10px;}
+.dm-card{background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:var(--r);padding:14px 16px;box-shadow:var(--glass-shadow);cursor:pointer;transition:all .18s;position:relative;}
+.dm-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.1);}
+.dm-card-title{font-size:15px;font-weight:600;margin-bottom:5px;}
+.dm-card-body{font-size:13px;color:var(--tm);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.dm-card-meta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.dm-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;}
+.dm-active{background:var(--gl);color:var(--gt);}
+.dm-superseded{background:var(--rl);color:var(--rt);}
+.dm-exploring{background:var(--al);color:var(--at);}
+.dm-archived{background:var(--grl);color:var(--tt);}
+.dm-confidence{display:flex;gap:2px;}
+.dm-conf-dot{width:6px;height:6px;border-radius:50%;background:var(--grb);}
+.dm-conf-dot.filled{background:var(--green2);}
+.dm-card-corner{position:absolute;top:10px;right:12px;font-size:10px;color:var(--tt);}
+/* Decision detail modal */
+.dm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:800;display:none;align-items:center;justify-content:center;padding:20px;}
+.dm-overlay.open{display:flex;}
+.dm-modal{background:rgba(255,255,255,0.95);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.7);border-radius:var(--r-lg);padding:28px;width:min(600px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,0.2);transform:translateY(20px) scale(0.97);transition:transform 0.28s cubic-bezier(0.34,1.4,0.64,1);}
+.dm-overlay.open .dm-modal{transform:translateY(0) scale(1);}
+.dm-modal h3{font-family:var(--font-condensed);font-size:22px;font-weight:700;margin-bottom:16px;}
+.dm-ai-updating{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tm);padding:10px 0;}
 </style>
 </head>
 <body>
@@ -2072,17 +2119,17 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 
 <!-- MEETINGS -->
 <div class="panel" id="panel-meetings">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-    <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Meeting Intelligence</div>
-    <button class="btn btn-primary" onclick="createMeeting()">+ New meeting</button>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;flex:1;">Meeting Intelligence</div>
+    <button class="btn btn-secondary" style="font-size:13px;padding:7px 14px;" onclick="gp('decision-map')">🗺 Decision Map</button>
   </div>
-  <div class="al al-b" style="margin-bottom:14px;"><strong>Record or paste any meeting transcript</strong> — Claude extracts the summary, decisions, and action items, then you push tasks directly to committee boards with one click. Works with live recording (Chrome) and Fireflies.ai exports.</div>
 
   <div class="mtg-layout">
     <!-- LEFT: meeting list -->
     <div class="mtg-list">
       <div class="mtg-list-head">
         <div class="mtg-list-title">All meetings</div>
+        <button class="mtg-new-btn" onclick="createMeeting()" title="New meeting">+</button>
       </div>
       <div class="mtg-list-body" id="MTG-list"></div>
     </div>
@@ -2091,9 +2138,8 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <div class="mtg-detail" id="MTG-detail">
       <div class="mtg-detail-empty" id="MTG-empty">
         <div class="mtg-detail-empty-icon">🎙️</div>
-        <div style="font-size:14px;font-weight:500;color:var(--text);">Select or create a meeting</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);">Select a meeting or hit + to start</div>
         <div style="font-size:13px;">Record live, paste a Fireflies transcript,<br>or type notes — Claude does the rest.</div>
-        <button class="btn btn-primary" style="margin-top:8px;" onclick="createMeeting()">+ New meeting</button>
       </div>
 
       <!-- Detail header (hidden until meeting selected) -->
@@ -2101,7 +2147,11 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
         <div class="mtg-detail-head">
           <input class="mtg-detail-title-input" id="MTG-title" placeholder="Meeting title…" onchange="saveMtgField('title',this.value)">
           <div class="mtg-detail-meta">
-            <div class="mtg-meta-chip">📅 <input type="date" id="MTG-date" onchange="saveMtgField('meeting_date',this.value)"></div>
+            <div class="mtg-meta-chip">📅
+              <input type="date" id="MTG-date"
+                onchange="saveMtgField('meeting_date',this.value)"
+                style="font-family:var(--font);font-size:13px;border:none;background:transparent;cursor:pointer;color:var(--text);outline:none;">
+            </div>
             <div class="mtg-meta-chip">🏷️
               <select id="MTG-committee" onchange="saveMtgField('committee',this.value)">
                 <option value="">All committees</option>
@@ -2110,7 +2160,17 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
                 <option value="vol">Volunteers</option><option value="all">Full committee</option>
               </select>
             </div>
-            <div class="mtg-meta-chip">👥 <input type="text" id="MTG-attendees" placeholder="Names comma-separated" style="width:220px;" onchange="saveMtgField('attendees',this.value)"></div>
+            <!-- Attendees — member chips with autocomplete -->
+            <div class="mtg-meta-chip mtg-attendees-chip" style="flex:1;min-width:200px;position:relative;">
+              👥
+              <div class="mtg-att-tags" id="MTG-att-tags"></div>
+              <input type="text" id="MTG-att-input" placeholder="Add attendee…"
+                autocomplete="off"
+                oninput="mtgAttSearch(this.value)"
+                onkeydown="mtgAttKey(event)"
+                style="border:none;background:transparent;font-family:var(--font);font-size:13px;outline:none;min-width:120px;flex:1;">
+              <div class="mtg-att-dropdown" id="MTG-att-dropdown" style="display:none;"></div>
+            </div>
             <div class="mtg-meta-chip" id="MTG-status-chip"></div>
             <button class="ab" style="color:var(--red);margin-left:auto;" onclick="deleteMeeting()">Delete</button>
           </div>
@@ -2462,6 +2522,86 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   </div>
 </div>
 
+<!-- DECISION MAP -->
+<div class="panel" id="panel-decision-map">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+    <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;flex:1;">Decision Map</div>
+    <button class="btn btn-secondary" style="font-size:13px;padding:7px 14px;" onclick="gp('meetings')">← Meetings</button>
+    <button class="btn btn-primary" style="font-size:13px;padding:7px 14px;" onclick="openDMEdit(null)">+ Add decision</button>
+  </div>
+  <div class="al al-b" style="margin-bottom:16px;"><strong>Organizational memory.</strong> Every formal decision ever made — built and updated by AI after each meeting. Search, browse by committee or type, and track how thinking has evolved over time.</div>
+
+  <div class="dm-layout">
+    <!-- Filter sidebar -->
+    <div class="dm-sidebar">
+      <div class="dm-sidebar-head">Browse by</div>
+      <div class="dm-filter active" data-f="all" onclick="dmSetFilter('all')">📋 All decisions</div>
+      <div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);margin-top:4px;">Committee</div>
+      <div class="dm-filter" data-f="fb" onclick="dmSetFilter('fb')"><span class="dm-filter-dot" style="background:var(--fb)"></span>Food & Bev</div>
+      <div class="dm-filter" data-f="inv" onclick="dmSetFilter('inv')"><span class="dm-filter-dot" style="background:var(--inv)"></span>Inventory</div>
+      <div class="dm-filter" data-f="mkt" onclick="dmSetFilter('mkt')"><span class="dm-filter-dot" style="background:var(--mkt)"></span>Marketing</div>
+      <div class="dm-filter" data-f="gx" onclick="dmSetFilter('gx')"><span class="dm-filter-dot" style="background:var(--gx)"></span>Guest Exp.</div>
+      <div class="dm-filter" data-f="vol" onclick="dmSetFilter('vol')"><span class="dm-filter-dot" style="background:var(--vol)"></span>Volunteers</div>
+      <div style="padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);margin-top:4px;">Category</div>
+      <div class="dm-filter" data-f="logistics" onclick="dmSetFilter('logistics')">🚛 Logistics</div>
+      <div class="dm-filter" data-f="vendor" onclick="dmSetFilter('vendor')">🤝 Vendors</div>
+      <div class="dm-filter" data-f="creative" onclick="dmSetFilter('creative')">🎨 Creative</div>
+      <div class="dm-filter" data-f="policy" onclick="dmSetFilter('policy')">📜 Policy</div>
+      <div class="dm-filter" data-f="exploring" onclick="dmSetFilter('exploring')">🔍 Still exploring</div>
+    </div>
+
+    <!-- Decision cards -->
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <input type="text" id="DM-search" placeholder="Search decisions…"
+          oninput="rDecisionMap()"
+          style="flex:1;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+        <div id="DM-count" style="font-size:12px;color:var(--tt);white-space:nowrap;"></div>
+      </div>
+      <div class="dm-grid" id="DM-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Decision edit modal -->
+<div class="dm-overlay" id="DM-overlay" onclick="if(event.target.id==='DM-overlay')closeDMEdit()">
+  <div class="dm-modal">
+    <h3 id="DM-modal-title">Add decision</h3>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Title</label>
+      <input type="text" id="DM-title" placeholder="Short label for this decision" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Committee</label>
+        <select id="DM-committee" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;">
+          <option value="">All</option><option value="fb">Food & Bev</option><option value="inv">Inventory</option>
+          <option value="mkt">Marketing</option><option value="gx">Guest Exp.</option><option value="vol">Volunteers</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Category</label>
+        <select id="DM-category" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;">
+          <option value="general">General</option><option value="logistics">Logistics</option>
+          <option value="vendor">Vendor</option><option value="creative">Creative</option>
+          <option value="policy">Policy</option>
+        </select></div>
+    </div>
+    <div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Decision / context</label>
+      <textarea id="DM-body" rows="5" placeholder="What was decided? Include context, rationale, and any nuance the committee should remember…" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;resize:vertical;"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Status</label>
+        <select id="DM-status" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;">
+          <option value="active">Active — confirmed decision</option>
+          <option value="exploring">Still exploring</option>
+          <option value="superseded">Superseded / changed</option>
+          <option value="archived">Archived</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--tt);display:block;margin-bottom:5px;">Confidence (1–5)</label>
+        <input type="range" id="DM-confidence" min="1" max="5" value="3" style="width:100%;margin-top:8px;"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeDMEdit()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveDMEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- COMMITTEE PANELS -->
 
 <!-- SURVEYS -->
@@ -2627,6 +2767,7 @@ const sb=supabase.createClient(SBU,SBK);
 
 // ── STATE ──
 let items=[],resps=[],sponsors=[],budgetAreas=[],receipts=[],receiptItems=[],assets=[];
+let mtgAttendees=[];
 let commsTouchpoints=[],campaigns=[],vendors=[],vendorRatings=[],vendorQuotes=[];
 // shifts declared in Event Day Engine above
 let focId=null,cId=null,cK=null,editSpId=null,currentReceipt=null,assetFilter='all';
@@ -5502,48 +5643,116 @@ let mtgInputTab='record';
 function rMeetings(){
   const list=document.getElementById('MTG-list');if(!list)return;
   const sorted=[...meetings].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-  if(!sorted.length){list.innerHTML=`<div class="mtg-list-empty">No meetings yet.<br>Click "+ New meeting" to start.</div>`;return;}
+  if(!sorted.length){list.innerHTML=`<div class="mtg-list-empty">No meetings yet.<br>Hit + to start.</div>`;return;}
   list.innerHTML=sorted.map(m=>{
     const COMM={fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers',all:'Full committee','':`All`};
     const statusDot={draft:'msd-draft',processing:'msd-processing',processed:'msd-processed',archived:'msd-archived'}[m.status||'draft'];
-    return`<div class="mtg-list-item ${activeMtgId===m.id?'active':''}" onclick="openMeeting('${m.id}')">
+    return`<div class="mtg-list-item ${activeMtgId===m.id?'active':''}" onclick="openMeeting('${m.id}')" data-id="${m.id}">
       <div class="mtg-list-item-title">
-        <span class="mtg-status-dot ${statusDot}"></span>${esc(m.title||'Untitled meeting')}
+        <span class="mtg-status-dot ${statusDot}"></span>
+        <span style="flex:1;" ondblclick="event.stopPropagation();startInlineRename('${m.id}',this)">${esc(m.title||'Untitled meeting')}</span>
       </div>
       <div class="mtg-list-item-meta">${m.meeting_date||'No date'} · ${COMM[m.committee]||'All'} · ${m.attendees?m.attendees.split(',').length+' people':'No attendees'}</div>
     </div>`;
   }).join('');
 }
 
-// ── CREATE ──
-async function createMeeting(){
-  const title=prompt('Meeting title (e.g. "Marketing Committee — Apr 2026"):');
-  if(!title)return;
-  const today=new Date().toISOString().split('T')[0];
-  const{data:m}=await sb.from('meetings').insert({title,meeting_date:today,committee:'',attendees:presenceName||'',status:'draft',source:'manual'}).select().single();
-  if(m){meetings.unshift(m);rMeetings();openMeeting(m.id);}
+function startInlineRename(id, el) {
+  const m = meetings.find(x=>x.id===id); if (!m) return;
+  const input = document.createElement('input');
+  input.className = 'mtg-inline-rename';
+  input.value = m.title || '';
+  input.onclick = e => e.stopPropagation();
+  input.onblur = async () => {
+    const val = input.value.trim() || 'Untitled meeting';
+    m.title = val; el.textContent = val;
+    el.parentNode.replaceChild(el, input);
+    const dt = document.getElementById('MTG-title');
+    if (dt && activeMtgId===id) dt.value = val;
+    await sb.from('meetings').update({title:val}).eq('id',id);
+  };
+  input.onkeydown = e => { if(e.key==='Enter') input.blur(); if(e.key==='Escape'){rMeetings();} };
+  el.parentNode.replaceChild(input, el);
+  input.focus(); input.select();
 }
 
-// ── OPEN ──
+async function createMeeting(){
+  const today=new Date().toISOString().split('T')[0];
+  const{data:m}=await sb.from('meetings').insert({
+    title:'New meeting',meeting_date:today,committee:'',
+    attendees:presenceName||'',status:'draft',source:'manual'
+  }).select().single();
+  if(m){
+    meetings.unshift(m); rMeetings(); openMeeting(m.id);
+    setTimeout(()=>{
+      const span=document.querySelector(`[data-id="${m.id}"] .mtg-list-item-title span`);
+      if(span) startInlineRename(m.id, span);
+    },80);
+  }
+}
+
+let profiles=[];
+async function loadProfiles(){
+  const{data}=await sb.from('profiles').select('id,name,email,avatar_color,committee').order('name');
+  if(data) profiles=data;
+}
+
+let mtgAttSet=new Set();
+function mtgAttRender(){
+  const tags=document.getElementById('MTG-att-tags');if(!tags)return;
+  tags.innerHTML=[...mtgAttSet].map(n=>`<span class="mtg-att-tag">${esc(n)}<button onclick="mtgAttRemove('${esc(n)}')">×</button></span>`).join('');
+  saveMtgField('attendees',[...mtgAttSet].join(', '));
+}
+function mtgAttRemove(n){mtgAttSet.delete(n);mtgAttRender();}
+function mtgAttSearch(q){
+  const dd=document.getElementById('MTG-att-dropdown');if(!dd)return;
+  if(!q.trim()){dd.style.display='none';return;}
+  const lower=q.toLowerCase();
+  const matches=profiles.filter(p=>p.name?.toLowerCase().includes(lower)&&![...mtgAttSet].includes(p.name)).slice(0,8);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=matches.map(p=>`<div class="mtg-att-opt" onclick="mtgAttAdd('${esc(p.name)}')">
+    <div class="mtg-att-av" style="background:${p.avatar_color||avc(p.name)}">${initials(p.name)}</div>
+    <div><div style="font-size:13px;font-weight:500">${esc(p.name)}</div><div style="font-size:11px;color:var(--tm)">${esc(p.email||'')}</div></div>
+  </div>`).join('');
+}
+function mtgAttAdd(n){
+  mtgAttSet.add(n);
+  document.getElementById('MTG-att-input').value='';
+  document.getElementById('MTG-att-dropdown').style.display='none';
+  mtgAttRender();
+}
+function mtgAttKey(e){
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    const v=e.target.value.trim().replace(/,$/,'');
+    if(v){mtgAttSet.add(v);e.target.value='';mtgAttRender();}
+  }
+  if(e.key==='Escape') document.getElementById('MTG-att-dropdown').style.display='none';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.mtg-attendees-chip'))
+    document.getElementById('MTG-att-dropdown')&&(document.getElementById('MTG-att-dropdown').style.display='none');
+});
+
 function openMeeting(id){
   activeMtgId=id;
   const m=meetings.find(x=>x.id===id);if(!m)return;
   rMeetings();
   document.getElementById('MTG-empty').style.display='none';
   document.getElementById('MTG-head').style.display='block';
-  // Fill header
   document.getElementById('MTG-title').value=m.title||'';
-  document.getElementById('MTG-date').value=m.meeting_date||'';
+  const dateEl=document.getElementById('MTG-date');
+  if(dateEl) dateEl.value=m.meeting_date||new Date().toISOString().split('T')[0];
   document.getElementById('MTG-committee').value=m.committee||'';
-  document.getElementById('MTG-attendees').value=m.attendees||'';
-  const statusLabel={draft:'Draft',processing:'Processing…',processed:'✓ Processed',archived:'Archived'}[m.status||'draft'];
-  document.getElementById('MTG-status-chip').textContent=statusLabel;
-  // Transcript
+  mtgAttSet=new Set((m.attendees||'').split(',').map(s=>s.trim()).filter(Boolean));
+  mtgAttRender();
+  const statusLabel={draft:'Draft',processing:'Processing…',processed:'✓ Analyzed',archived:'Archived'};
+  document.getElementById('MTG-status-chip').textContent=statusLabel[m.status||'draft']||'Draft';
   const t=m.transcript||'';
   document.getElementById('MTG-transcript-paste').value=t;
   document.getElementById('MTG-transcript-fireflies').value=t;
   mtgTranscriptFinal=t;
-  // Show results if already processed
   if(m.status==='processed'){
     showMeetingResults(m,id);
     document.getElementById('MTG-input-section').style.display='none';
@@ -5552,6 +5761,154 @@ function openMeeting(id){
     document.getElementById('MTG-processing').style.display='none';
     document.getElementById('MTG-results').style.display='none';
   }
+}
+
+// ══════════════════════════════════════
+// ── DECISION MAP ──
+// ══════════════════════════════════════
+let editingDMId=null;
+let dmFilter='all';
+let decisionMap=[];
+const DM_CAT_ICONS={general:'📋',logistics:'🚛',vendor:'🤝',creative:'🎨',policy:'📜'};
+const DM_COMM_COLORS={fb:'var(--fb)',inv:'var(--inv)',mkt:'var(--mkt)',gx:'var(--gx)',vol:'var(--vol)'};
+
+function rDecisionMap(){
+  const grid=document.getElementById('DM-grid');if(!grid)return;
+  const search=(document.getElementById('DM-search')?.value||'').toLowerCase();
+  let filtered=decisionMap.filter(d=>{
+    if(dmFilter==='all')return true;
+    if(dmFilter==='exploring')return d.status==='exploring';
+    if(['fb','inv','mkt','gx','vol'].includes(dmFilter))return d.committee===dmFilter;
+    return d.category===dmFilter;
+  });
+  if(search)filtered=filtered.filter(d=>d.title?.toLowerCase().includes(search)||d.body?.toLowerCase().includes(search));
+  const count=document.getElementById('DM-count');
+  if(count)count.textContent=`${filtered.length} decision${filtered.length!==1?'s':''}`;
+  if(!filtered.length){
+    grid.innerHTML=`<div style="padding:40px;text-align:center;color:var(--tm);">
+      <div style="font-size:36px;margin-bottom:12px;">🗺️</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px;">${search?'No matches':'No decisions yet'}</div>
+      <div style="font-size:13px;">Decisions are added automatically after AI analyzes a meeting, or add one manually above.</div>
+    </div>`;return;
+  }
+  grid.innerHTML='';
+  filtered.forEach(d=>{
+    const card=document.createElement('div');card.className='dm-card';
+    card.onclick=()=>openDMEdit(d.id);
+    const confDots=[1,2,3,4,5].map(i=>`<div class="dm-conf-dot ${i<=(d.confidence||3)?'filled':''}"></div>`).join('');
+    const cc=DM_COMM_COLORS[d.committee];
+    card.innerHTML=`
+      ${cc?`<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:${cc};border-radius:var(--r) 0 0 var(--r);"></div>`:''}
+      <div class="dm-card-corner">${DM_CAT_ICONS[d.category]||'📋'}</div>
+      <div class="dm-card-title" style="${cc?'padding-left:8px;':''}">${esc(d.title)}</div>
+      <div class="dm-card-body" style="${cc?'padding-left:8px;':''}">${esc(d.body||'')}</div>
+      <div class="dm-card-meta" style="${cc?'padding-left:8px;':''}">
+        <span class="dm-status dm-${d.status||'active'}">${d.status||'active'}</span>
+        <div class="dm-confidence">${confDots}</div>
+        ${d.last_updated?`<span style="font-size:11px;color:var(--tt);">${new Date(d.last_updated).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>`:''}
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+function dmSetFilter(f){
+  dmFilter=f;
+  document.querySelectorAll('.dm-filter').forEach(el=>el.classList.toggle('active',el.dataset.f===f));
+  rDecisionMap();
+}
+
+function openDMEdit(id){
+  editingDMId=id;
+  if(id){
+    const d=decisionMap.find(x=>x.id===id);if(!d)return;
+    document.getElementById('DM-modal-title').textContent='Edit decision';
+    document.getElementById('DM-title').value=d.title||'';
+    document.getElementById('DM-committee').value=d.committee||'';
+    document.getElementById('DM-category').value=d.category||'general';
+    document.getElementById('DM-body').value=d.body||'';
+    document.getElementById('DM-status').value=d.status||'active';
+    document.getElementById('DM-confidence').value=d.confidence||3;
+  } else {
+    document.getElementById('DM-modal-title').textContent='Add decision';
+    ['DM-title','DM-body'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('DM-committee').value='';
+    document.getElementById('DM-category').value='general';
+    document.getElementById('DM-status').value='active';
+    document.getElementById('DM-confidence').value=3;
+  }
+  document.getElementById('DM-overlay').classList.add('open');
+}
+function closeDMEdit(){document.getElementById('DM-overlay').classList.remove('open');}
+
+async function saveDMEntry(){
+  const title=document.getElementById('DM-title').value.trim();if(!title)return;
+  const data={
+    title,committee:document.getElementById('DM-committee').value,
+    category:document.getElementById('DM-category').value,
+    body:document.getElementById('DM-body').value.trim(),
+    status:document.getElementById('DM-status').value,
+    confidence:parseInt(document.getElementById('DM-confidence').value)||3,
+    last_updated:new Date().toISOString(),event_year:2026
+  };
+  closeDMEdit();
+  if(editingDMId){
+    const idx=decisionMap.findIndex(d=>d.id===editingDMId);
+    if(idx!==-1){decisionMap[idx]={...decisionMap[idx],...data};rDecisionMap();}
+    await sb.from('decision_map').update(data).eq('id',editingDMId);
+    toast('Decision updated','','');
+  } else {
+    const{data:d}=await sb.from('decision_map').insert(data).select().single();
+    if(d){decisionMap.unshift(d);rDecisionMap();}
+    toast('Decision saved','','');
+  }
+}
+
+async function updateDecisionMapFromMeeting(meetingId,decisions,summary,committee){
+  if(!decisions?.length)return;
+  const prompt=`You are the organizational memory keeper for Leadoff Lounge 2026.
+Current Decision Map (most recent 20):
+${JSON.stringify(decisionMap.slice(0,20).map(d=>({id:d.id,title:d.title,body:d.body?.slice(0,150),status:d.status})))}
+
+New decisions from this meeting:
+${decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}
+
+Meeting summary: ${summary||''}
+Committee: ${committee||'all'}
+
+Return ONLY a JSON array (no markdown) of changes needed:
+[{"action":"add"|"update"|"supersede","existing_id":null|"uuid","title":"short label","body":"full decision with context","committee":"fb|inv|mkt|gx|vol|","category":"general|logistics|vendor|creative|policy","status":"active|exploring|superseded","confidence":1-5}]
+
+Rules: Only include entries that need to be added or changed. Skip decisions already accurately captured.`;
+
+  try{
+    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt,max_tokens:2000})
+    });
+    const data=await resp.json();
+    const txt=data.content?.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const updates=JSON.parse(txt);
+    for(const u of updates){
+      const payload={title:u.title,body:u.body,committee:u.committee||committee||'',
+        category:u.category||'general',status:u.status||'active',
+        confidence:u.confidence||3,last_updated:new Date().toISOString(),
+        source_meeting_ids:JSON.stringify([meetingId]),event_year:2026};
+      if(u.action==='add'){
+        const{data:d}=await sb.from('decision_map').insert(payload).select().single();
+        if(d)decisionMap.unshift(d);
+      } else if(u.action==='update'&&u.existing_id){
+        await sb.from('decision_map').update(payload).eq('id',u.existing_id);
+        const idx=decisionMap.findIndex(d=>d.id===u.existing_id);
+        if(idx!==-1)decisionMap[idx]={...decisionMap[idx],...payload};
+      } else if(u.action==='supersede'&&u.existing_id){
+        await sb.from('decision_map').update({status:'superseded',last_updated:new Date().toISOString()}).eq('id',u.existing_id);
+        const idx=decisionMap.findIndex(d=>d.id===u.existing_id);
+        if(idx!==-1)decisionMap[idx].status='superseded';
+      }
+    }
+    rDecisionMap();
+    toast('Decision Map updated',`${updates.length} change${updates.length!==1?'s':''} from this meeting`,'');
+  }catch(e){console.warn('Decision map update failed:',e);}
 }
 
 const mtgDbt={};
@@ -5721,6 +6078,11 @@ RULES:
       }));
       const{data:tasks}=await sb.from('meeting_tasks').insert(rows).select();
       if(tasks)meetingTasks.push(...tasks);
+    }
+
+    // Update decision map from this meeting's decisions (runs in background)
+    if(result.decisions?.length){
+      updateDecisionMapFromMeeting(activeMtgId, result.decisions, result.summary, committee);
     }
 
     document.getElementById('MTG-processing').style.display='none';
@@ -7278,8 +7640,8 @@ function checkGoogleReady() {
 setTimeout(checkGoogleReady, 1000);
 
 // ── NAV ──
-const PANELS=['overview','eventday','sponsors','budget','receipts','meetings','projects','assets','attendees','surveys','vendors','fb','inv','mkt','gx','vol'];
-const PANEL_NAMES={overview:'Overview',eventday:'Event Day',sponsors:'Sponsors',budget:'Budget',receipts:'Receipts',meetings:'Meetings',projects:'Projects',assets:'Assets',attendees:'Attendees',surveys:'Surveys',vendors:'Vendors',fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers'};
+const PANELS=['overview','eventday','sponsors','budget','receipts','meetings','projects','assets','attendees','surveys','vendors','decision-map','fb','inv','mkt','gx','vol'];
+const PANEL_NAMES={overview:'Overview',eventday:'Event Day',sponsors:'Sponsors',budget:'Budget',receipts:'Receipts',meetings:'Meetings',projects:'Projects',assets:'Assets',attendees:'Attendees',surveys:'Surveys',vendors:'Vendors','decision-map':'Decision Map',fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers'};
 const COMMITTEE_PANELS=['fb','inv','mkt','gx','vol'];
 function gp(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -7301,6 +7663,8 @@ function gp(id){
   if(id==='eventday'){fetchWeather();rMilestones();}
   if(id==='assets'){rFolders();rAssets();}
   if(id==='receipts'){rReceiptYears();rReceipts();}
+  if(id==='decision-map'){rDecisionMap();}
+  if(id==='meetings'){loadProfiles();}
   if(presenceChannel&&presenceName){
     presenceChannel.track({id:SESSION_ID,name:presenceName,page:currentPage,joined_at:Date.now()});
   }
@@ -7428,7 +7792,7 @@ async function init(){
   document.getElementById('CD').textContent=Math.max(0,Math.ceil((new Date('2026-06-12')-new Date())/86400000));
   document.getElementById('LM').textContent='Loading data…';
 
-  const[{data:id,error:ie},{data:rd},{data:spd},{data:bad},{data:recd},{data:rid},{data:asd},{data:shd},{data:annd},{data:attd},{data:pjd},{data:pid},{data:pud},{data:mtgd},{data:mtkd},{data:survd},{data:sqd},{data:srd},{data:msd},{data:ctd},{data:cpd},{data:vnd},{data:vrd},{data:vqd}]=await Promise.all([
+  const[{data:id,error:ie},{data:rd},{data:spd},{data:bad},{data:recd},{data:rid},{data:asd},{data:shd},{data:annd},{data:attd},{data:pjd},{data:pid},{data:pud},{data:mtgd},{data:mtkd},{data:survd},{data:sqd},{data:srd},{data:msd},{data:dmd},{data:ctd},{data:cpd},{data:vnd},{data:vrd},{data:vqd}]=await Promise.all([
     sb.from('items').select('*').order('sort_order'),
     sb.from('responsibilities').select('*').order('sort_order'),
     sb.from('sponsors').select('*').order('sort_order'),
@@ -7448,6 +7812,7 @@ async function init(){
     sb.from('survey_questions').select('*').order('sort_order'),
     sb.from('survey_responses').select('*').order('submitted_at',{ascending:false}),
     sb.from('milestones').select('*').order('milestone_time'),
+    sb.from('decision_map').select('*').order('last_updated',{ascending:false}),
     sb.from('comms_touchpoints').select('*').order('sort_order'),
     sb.from('campaigns').select('*').order('sort_order'),
     sb.from('vendors').select('*').order('name'),
@@ -7470,7 +7835,7 @@ async function init(){
   projects=pjd||[];projectItems=pid||[];projectUpdates=pud||[];
   meetings=mtgd||[];meetingTasks=mtkd||[];
   surveys=survd||[];surveyQuestions=sqd||[];surveyResponses=srd||[];
-  milestones=msd||[];commsTouchpoints=ctd||[];campaigns=cpd||[];vendors=vnd||[];vendorRatings=vrd||[];vendorQuotes=vqd||[];
+  milestones=msd||[];decisionMap=dmd||[];commsTouchpoints=ctd||[];campaigns=cpd||[];vendors=vnd||[];vendorRatings=vrd||[];vendorQuotes=vqd||[];
 
   if(!items.length&&!resps.length)await seedInv();
   if(!budgetAreas.length)await seedBudget();
@@ -7481,6 +7846,7 @@ async function init(){
   rProjects();
   rSurveys();
   rMilestones();
+  rDecisionMap();
   fetchWeather();
   checkSurveyURL();
   flushOfflineQueue();
