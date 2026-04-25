@@ -3353,11 +3353,11 @@ async function analyzePhoto(){
     await new Promise(r=>setTimeout(r,400)); // let step 1 render
     setStep(2);
 
-    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting',{
+    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/ai-proxy',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5',
         max_tokens:2000,
         messages:[{role:'user',content:[
           {type:'image',source:{type:'base64',media_type:mime,data:b64}},
@@ -6182,7 +6182,7 @@ Return ONLY a JSON array (no markdown) of changes needed:
 Rules: Only include entries that need to be added or changed. Skip decisions already accurately captured.`;
 
   try{
-    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting',{
+    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/ai-proxy',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({prompt,max_tokens:2000})
     });
@@ -6349,9 +6349,9 @@ RULES:
 
   try{
     setMtgStep(2);
-    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting',{
+    const resp=await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/ai-proxy',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({prompt,model:'claude-sonnet-4-20250514',max_tokens:4000})
+      body:JSON.stringify({prompt,model:'claude-sonnet-4-5',max_tokens:4000})
     });
     setMtgStep(3);
     const d=await resp.json();
