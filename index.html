@@ -6129,7 +6129,7 @@ async function processMeeting(){
   document.getElementById('MTG-results').style.display='none';
   setMtgStep(1);
 
-  const attendees=document.getElementById('MTG-attendees')?.value||m.attendees||'';
+  const attendees=[...mtgAttSet].join(', ')||document.getElementById('MTG-attendees')?.value||m.attendees||'';
   const committee=document.getElementById('MTG-committee')?.value||m.committee||'';
   const COMM_NAMES={fb:'Food & Bev',inv:'Inventory',mkt:'Marketing',gx:'Guest Exp.',vol:'Volunteers',all:'Full committee'};
 
@@ -6178,8 +6178,22 @@ RULES:
     });
     setMtgStep(3);
     const d=await resp.json();
+
+    // Check for errors from the Edge Function
+    if(d.error){
+      throw new Error(d.error);
+    }
+    if(!d.content){
+      throw new Error('No response from AI — check that ANTHROPIC_API_KEY is set in Supabase Edge Function secrets');
+    }
+
     const txt=d.content?.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
-    const result=JSON.parse(txt);
+    if(!txt){throw new Error('Empty response from AI');}
+
+    let result;
+    try{result=JSON.parse(txt);}
+    catch(e){throw new Error('AI returned invalid JSON — try again or shorten the transcript');}
+
     setMtgStep(4);
     await new Promise(r=>setTimeout(r,400));
 
