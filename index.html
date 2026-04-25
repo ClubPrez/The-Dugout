@@ -1500,6 +1500,27 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   </div>
 </div>
 
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="AUTH-screen" style="display:none;">
+  <div class="auth-card">
+    <span class="auth-logo">⚾</span>
+    <div class="auth-title">Leadoff Lounge 2026</div>
+    <div class="auth-sub">Command Center — Steering Committee Access<br>Hot Shops · Omaha · June 12–13, 2026</div>
+    <div id="AUTH-form">
+      <input class="auth-input" type="email" id="AUTH-email" placeholder="Your email address" autocomplete="email">
+      <button class="auth-btn" id="AUTH-btn" onclick="sendMagicLink()">Send me a login link</button>
+      <div class="auth-msg" id="AUTH-msg"></div>
+    </div>
+    <div id="AUTH-sent" style="display:none;">
+      <div style="font-size:48px;margin-bottom:16px;">📧</div>
+      <div style="font-size:18px;font-weight:600;color:white;margin-bottom:8px;">Check your email</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.5);line-height:1.6;">We sent a login link to<br><strong style="color:rgba(255,255,255,0.8);" id="AUTH-sent-email"></strong><br><br>Click the link to access the dashboard.<br>It expires in 1 hour.</div>
+      <button class="auth-btn-secondary" onclick="resetAuthForm()" style="margin-top:20px;">Use a different email</button>
+    </div>
+    <div class="auth-footer">Private event — steering committee only.<br>Contact Chris Harwood if you need access.</div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header class="hdr">
   <div class="hdr-top">
@@ -6087,47 +6108,46 @@ let currentUser = null;
 let currentProfile = null;
 
 async function initAuth() {
-  // Check for existing session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    await onSignedIn(session.user);
-    return;
-  }
-
-  // Check URL for magic link token (hash-based)
-  const hash = window.location.hash;
-  if (hash && (hash.includes('access_token') || hash.includes('type=magiclink') || hash.includes('type=recovery'))) {
-    const { data: { session: magicSession }, error } = await sb.auth.getSession();
-    if (magicSession?.user) {
-      // Clean URL
-      window.history.replaceState(null, '', window.location.pathname);
-      await onSignedIn(magicSession.user);
+  try {
+    // Check for existing session first
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await onSignedIn(session.user);
       return;
     }
-    if (error) console.warn('Magic link error:', error);
+
+    // Listen for auth state changes — handles magic link redirect
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        window.history.replaceState(null, '', window.location.pathname);
+        await onSignedIn(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        onSignedOut();
+      } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+        currentUser = session.user;
+      }
+    });
+
+    // No session — show login
+    showAuthScreen();
+  } catch(e) {
+    // If auth fails for any reason, load app anyway (fallback for debugging)
+    console.warn('Auth init error:', e);
+    if (!appInitialized) { appInitialized = true; init(); }
   }
-
-  // Listen for auth state changes (handles magic link redirect)
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      window.history.replaceState(null, '', window.location.pathname);
-      await onSignedIn(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      onSignedOut();
-    }
-  });
-
-  // Show auth screen
-  showAuthScreen();
 }
 
 function showAuthScreen() {
-  document.getElementById('AUTH-screen').style.display = 'flex';
-  document.getElementById('AUTH-email').focus();
+  const screen = document.getElementById('AUTH-screen');
+  if (screen) {
+    screen.style.display = 'flex';
+    setTimeout(() => document.getElementById('AUTH-email')?.focus(), 100);
+  }
 }
 
 function hideAuthScreen() {
   const screen = document.getElementById('AUTH-screen');
+  if (!screen) return;
   screen.style.transition = 'opacity 0.4s';
   screen.style.opacity = '0';
   setTimeout(() => { screen.style.display = 'none'; screen.style.opacity = '1'; }, 400);
@@ -6196,8 +6216,7 @@ async function sendMagicLink() {
   const { error } = await sb.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: window.location.href,
-      shouldCreateUser: false, // only allow pre-existing users
+      emailRedirectTo: window.location.origin + window.location.pathname,
     }
   });
 
@@ -6205,11 +6224,9 @@ async function sendMagicLink() {
   btn.textContent = 'Send me a login link';
 
   if (error) {
-    if (error.message?.includes('User not found') || error.message?.includes('not found')) {
-      msg.textContent = 'That email isn\'t registered. Contact Chris Harwood for access.';
-    } else {
-      msg.textContent = error.message || 'Something went wrong. Try again.';
-    }
+    msg.textContent = error.message?.includes('rate limit')
+      ? 'Too many attempts. Wait a minute and try again.'
+      : 'Something went wrong — try again or contact Chris Harwood.';
     msg.className = 'auth-msg error';
     return;
   }
