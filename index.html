@@ -6109,6 +6109,10 @@ let currentProfile = null;
 
 async function initAuth() {
   try {
+    // Hide loading screen immediately regardless of auth state
+    const ls = document.getElementById('LS');
+    if (ls) ls.style.display = 'none';
+
     // Check for existing session first
     const { data: { session } } = await sb.auth.getSession();
     if (session?.user) {
@@ -6133,6 +6137,8 @@ async function initAuth() {
   } catch(e) {
     // If auth fails for any reason, load app anyway (fallback for debugging)
     console.warn('Auth init error:', e);
+    const ls = document.getElementById('LS');
+    if (ls) ls.style.display = 'none';
     if (!appInitialized) { appInitialized = true; init(); }
   }
 }
