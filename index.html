@@ -3777,7 +3777,31 @@ function closeMoveModal() {
 async function deleteAssetFolder(id) {
   if (MASTER_IDS.has(id)) { toast('Cannot delete','Master folders are fixed','warn'); return; }
   const folder = customFolders.find(f => f.id === id);
-  ut.onclick = e => e.stopPropagation();
+  const fileCount = assets.filter(a => a.folder === id).length;
+  const childCount = customFolders.filter(f => f.parent_id === id).length;
+  const msg = [fileCount>0?fileCount+' file'+(fileCount!==1?'s':''):'', childCount>0?childCount+' subfolder'+(childCount!==1?'s':''):''].filter(Boolean).join(' and ');
+  if (msg) {
+    if (!confirm(`"\${folder?.label}" has \${msg}. Delete? Contents move to Misc.`)) return;
+    await sb.from('assets').update({ folder:'misc' }).eq('folder', id);
+    assets.forEach(a => { if (a.folder === id) a.folder = 'misc'; });
+    const children = customFolders.filter(f => f.parent_id === id);
+    for (const c of children) { await sb.from('asset_folders').update({ parent_id:'root' }).eq('id', c.id); c.parent_id = 'root'; }
+  } else {
+    if (!confirm(`Delete folder "\${folder?.label}"?`)) return;
+  }
+  await sb.from('asset_folders').delete().eq('id', id);
+  customFolders = customFolders.filter(f => f.id !== id);
+  if (feFolder === id) selectAssetFolder('root','Asset Library');
+  else { rSidebar(); feRenderInner(); }
+  toast('Deleted', folder?.label||'', 'warn');
+}
+
+function renameSidebarFolder(id, el) {
+  const folder = customFolders.find(f => f.id === id); if (!folder) return;
+  const input = document.createElement('input');
+  input.value = folder.label;
+  input.style.cssText = 'background:rgba(37,99,235,0.1);color:var(--text);font-size:12px;border:1px solid #93c5fd;border-radius:4px;padding:2px 6px;width:100%;outline:none;font-family:var(--font);';
+  input.onclick = e => e.stopPropagation();
   input.onblur = async () => {
     const val = input.value.trim() || folder.label;
     folder.label = val; el.textContent = val;
@@ -4010,7 +4034,47 @@ function showCtx(x, y) {
 }
 function hideCtx() { document.getElementById('FE-ctx')?.classList.remove('show'); }
 document.addEventListener('click', hideCtx);
-document.addEventListed?.writeText(links.join('\n'));
+document.addEventListener('keydown', e => { if(e.key==='Escape') { hideCtx(); clearSelection(); }});
+
+function ctxOpen() { if(feCtxAsset) openAssetLightbox(feCtxAsset); hideCtx(); }
+function ctxCopyLink() {
+  if (feCtxAsset?.file_url) navigator.clipboard?.writeText(feCtxAsset.file_url);
+  toast('Copied', 'Link copied to clipboard', ''); hideCtx();
+}
+function ctxDownload() {
+  if (feCtxAsset?.file_url) { const a=document.createElement('a');a.href=feCtxAsset.file_url;a.download=feCtxAsset.name||'file';a.click(); }
+  hideCtx();
+}
+async function ctxDelete() {
+  hideCtx();
+  if (!feCtxAsset||!confirm(`Delete "${feCtxAsset.name}"?`)) return;
+  await deleteAssetById(feCtxAsset.id, feCtxAsset.storage_path);
+  feCtxAsset = null;
+}
+
+async function deleteSelected() {
+  if (!feSelected.size) return;
+  if (!confirm(`Delete ${feSelected.size} item${feSelected.size!==1?'s':''}?`)) return;
+  for (const id of feSelected) {
+    const a = assets.find(x=>x.id===id);
+    if (a) await deleteAssetById(a.id, a.storage_path);
+  }
+  feSelected.clear();
+}
+
+async function deleteAssetById(id, storagePath) {
+  if (storagePath && !storagePath.startsWith('drive:')) {
+    await sb.storage.from('leadoff-assets').remove([storagePath]);
+  }
+  await sb.from('assets').delete().eq('id', id);
+  assets = assets.filter(a=>a.id!==id);
+  feRender();
+  toast('Deleted', 'File removed', 'warn');
+}
+
+function copySelectedLinks() {
+  const links = [...feSelected].map(id => assets.find(a=>a.id===id)?.file_url).filter(Boolean);
+  navigator.clipboard?.writeText(links.join('\n'));
   toast('Copied', `${links.length} link${links.length!==1?'s':''} copied`, '');
   clearSelection();
 }
@@ -4141,7 +4205,67 @@ function rT(k){
     const actStyle=act>est&&est>0?'color:var(--red)':'color:var(--text)';
     tr.innerHTML=`
       <td class="ic" onclick="openCard('${item.id}','${k}')">${thumbHtml(item.id,item.name)}</td>
-      <td><input class="ni" type="text" value="${esc(item.name)}" placeholder="Item name" onfocus="focId='${item.id}'" onblur="focId=nullfBudget(id, field, val){
+      <td><input class="ni" type="text" value="${esc(item.name)}" placeholder="Item name" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','name',this.value)"></td>
+      <td><input class="qi" type="text" value="${esc(item.qty)}" placeholder="—" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','qty',this.value)"></td>
+      <td><select class="ssel ${scls(item.status)}" onchange="uf('${item.id}','status',this.value);this.className='ssel '+scls(this.value)">
+        <option value="tbd" ${item.status==='tbd'?'selected':''}>TBD</option>
+        <option value="sourced" ${item.status==='sourced'?'selected':''}>Sourced ✓</option>
+        <option value="donated" ${item.status==='donated'?'selected':''}>Donated</option>
+        <option value="attention" ${item.status==='attention'?'selected':''}>Needs attention</option>
+      </select></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span style="color:var(--tm);font-size:13px;">$</span>
+          <input class="bi" type="number" min="0" step="0.01" value="${est||''}" placeholder="0.00"
+            onfocus="focId='${item.id}'" onblur="focId=null"
+            onchange="ufBudget('${item.id}','estimated_budget',this.value)"
+            style="width:80px;border:1px solid var(--grb);border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:13px;outline:none;background:white;">
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:3px;">
+            <span style="color:var(--tm);font-size:13px;">$</span>
+            <input class="bi" type="number" min="0" step="0.01" value="${act||''}" placeholder="0.00"
+              onfocus="focId='${item.id}'" onblur="focId=null"
+              onchange="ufSpend('${item.id}',this.value)"
+              style="width:80px;border:1px solid var(--grb);border-radius:6px;padding:5px 7px;font-family:var(--font);font-size:13px;outline:none;background:white;${act>est&&est>0?'border-color:#fca5a5;':''}"
+              title="${locked?'Manually set — not synced from receipts':'Auto-calculated from approved receipts'}">
+            ${locked?`<span title="Manually overridden" style="font-size:11px;cursor:pointer;opacity:.5;" onclick="unlockSpend('${item.id}')">🔒</span>`:`<span title="Auto from receipts" style="font-size:11px;opacity:.3;">⟳</span>`}
+          </div>
+          ${variance!==null?`<span style="font-size:11px;${varStyle};white-space:nowrap;">${varText}</span>`:''}
+        </div>
+      </td>
+      <td><input class="noi" type="text" value="${esc(item.note)}" placeholder="Notes…" onfocus="focId='${item.id}'" onblur="focId=null" onchange="uf('${item.id}','note',this.value)"></td>
+      <td><button class="db" onclick="delItem('${item.id}')">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  // Refresh the budget bar for this committee
+  const bar=document.getElementById('comm-budget-bar-'+k);
+  if(bar) bar.innerHTML=rCommBudgetBar(k);
+}
+function rG(k){
+  const grid=document.getElementById('mg-'+k);if(!grid)return;
+  const rows=items.filter(i=>i.committee===k).sort((a,b)=>a.sort_order-b.sort_order);
+  grid.innerHTML='';
+  rows.forEach(item=>{
+    const div=document.createElement('div');div.className='mt';div.onclick=()=>openCard(item.id,k);
+    const url=giu(item.name),emoji=ge(item.name);
+    div.innerHTML=`${url?`<img class="mt-img" src="${url}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:''}
+      <div class="mt-fb" style="${url?'':'display:flex'}">${emoji}</div>
+      <div class="mt-body"><div class="mt-name">${esc(item.name)||'<em style="color:#9ca3af">Unnamed</em>'}</div><div class="mt-qty">${esc(item.qty)||'TBD'}</div>
+      <span style="${sstyle(item.status)};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;">${slbl(item.status)}</span>
+      ${(item.estimated_budget>0||item.actual_spend>0)?`<div style="margin-top:5px;font-size:11px;color:var(--tm);display:flex;gap:6px;flex-wrap:wrap;">
+        ${item.estimated_budget>0?`<span>Est: <strong style="color:var(--text)">${fmt$(item.estimated_budget)}</strong></span>`:""}
+        ${item.actual_spend>0?`<span style="${item.actual_spend>item.estimated_budget&&item.estimated_budget>0?'color:var(--red);font-weight:600':''}">Spent: <strong>${fmt$(item.actual_spend)}</strong></span>`:""}
+      </div>`:""}
+      </div>
+      <div class="mt-exp">↗</div>`;
+    grid.appendChild(div);
+  });
+}
+// ── ITEM BUDGET HELPERS ──
+async function ufBudget(id, field, val){
   const num = parseFloat(val)||0;
   const item = items.find(i=>i.id===id);
   if(!item) return;
