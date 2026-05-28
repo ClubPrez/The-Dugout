@@ -5369,7 +5369,7 @@ function renderAttTable(){
       <td><span class="att-ticket-pill" style="font-size:11px;">${esc(ticket)}</span></td>
       <td style="color:var(--tm);font-size:12px;">${a.created?new Date(a.created).toLocaleDateString('en-US',{month:'short',day:'numeric'}):a.order_date||'—'}</td>
       <td><span class="att-status-pill sp-${ci?'checked_in':a.status||'registered'}">${ci?'Checked in ✓':(a.status||'registered').replace('_',' ')}</span></td>
-      <td>${ci?`<button class="att-checkin-btn done" disabled>✓ In</button>`:`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`}</td>
+      <td>${ci?`<button class="att-checkin-btn done" onclick="checkOut('${a.id}')">✓ In</button>`:`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`}</td>
     </tr>`;
   }).join('');
   if(sorted.length>500)tbody.insertAdjacentHTML('beforeend',`<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--tm);font-size:12px;">Showing 500 of ${sorted.length} — use search to narrow</td></tr>`);
@@ -5400,7 +5400,7 @@ function renderAttCards(){
           <span class="att-status-pill sp-${ci?'checked_in':a.status||'registered'}">${ci?'✓ In':(a.status||'registered').replace('_',' ')}</span>
         </div>
       </div>
-      ${!ci?`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`:'<span style="font-size:20px;">✅</span>'}
+      ${!ci?`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`:`<button class="att-checkin-btn done" onclick="checkOut('${a.id}')">✓ In</button>`}
     </div>`;
   }).join('');
 }
@@ -5412,6 +5412,18 @@ async function checkIn(id){
   filterAttendees(); renderAttStats(); updateTabBadges();
   toast('✓ Checked in',`${att.first_name||''} ${att.last_name||''}`.trim()||att.email,'');
   await sb.from('attendees').update({status:'checked_in',checked_in:true,checked_in_at:att.checked_in_at}).eq('id',id);
+}
+
+async function checkOut(id){
+  const att=attendees.find(a=>a.id===id);if(!att)return;
+  const name=`${att.first_name||''} ${att.last_name||''}`.trim()||att.email||'this person';
+  // Show confirmation dialog
+  const confirmed=confirm(`Check out ${name}?\n\nThis will mark them as not checked in.`);
+  if(!confirmed)return;
+  att.status='Attending'; att.checked_in=false; att.checked_in_at=null;
+  filterAttendees(); renderAttStats(); updateTabBadges();
+  toast('Checked out',name,'warn');
+  await sb.from('attendees').update({status:'Attending',checked_in:false,checked_in_at:null}).eq('id',id);
 }
 
 // ── CHECK-IN MODE ──
@@ -5439,10 +5451,10 @@ function cinSearch(q){
   res.innerHTML=matches.map(a=>{
     const name=`${a.first_name||''} ${a.last_name||''}`.trim()||a.email;
     const ci=a.status==='checked_in';
-    return`<div class="att-cin-row" style="${ci?'opacity:.5':'cursor:pointer'}" onclick="${ci?'':` checkIn('${a.id}');document.getElementById('ATT-cin-input').value='';document.getElementById('ATT-cin-result').style.display='none'`}">
-      <div class="att-cin-name">${esc(name)} ${ci?'<span style="color:#4ade80;font-size:12px;">✓ Already in</span>':''}</div>
-      <div class="att-cin-ticket">${esc(a.ticket_type||'General')}</div>
-      ${!ci?`<button class="att-checkin-btn" style="flex-shrink:0;">Check in</button>`:''}
+    return`<div class="att-cin-row" style="cursor:pointer" onclick="${ci?`checkOut('${a.id}');document.getElementById('ATT-cin-input').value='';document.getElementById('ATT-cin-result').style.display='none'`:`checkIn('${a.id}');document.getElementById('ATT-cin-input').value='';document.getElementById('ATT-cin-result').style.display='none'`}">
+      <div class="att-cin-name">${esc(name)} ${ci?'<span style="color:#4ade80;font-size:12px;">✓ Checked in</span>':''}</div>
+      <div class="att-cin-ticket">${esc(a.ticket_type||a.ticket_class||'General')}</div>
+      ${ci?`<button class="att-checkin-btn done" style="flex-shrink:0;">✓ In</button>`:`<button class="att-checkin-btn" style="flex-shrink:0;">Check in</button>`}
     </div>`;
   }).join('');
 }
