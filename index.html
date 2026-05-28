@@ -2447,6 +2447,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Attendee Tracker</div>
     <div style="display:flex;gap:8px;">
       <button class="btn btn-secondary" onclick="exportAttendeesCSV()" style="font-size:12px;padding:7px 14px;">↓ Export CSV</button>
+      <button class="btn btn-secondary" onclick="syncEventbrite()" id="ATT-sync-btn" style="font-size:12px;padding:7px 14px;">⟳ Sync Eventbrite</button>
       <button class="btn btn-primary" onclick="openAddAttendee()" style="font-size:12px;padding:7px 14px;">+ Add manually</button>
     </div>
   </div>
@@ -5395,6 +5396,23 @@ async function addManualAttendee(data){
 }
 
 // ── EXPORT CSV ──
+async function syncEventbrite() {
+  const btn = document.getElementById('ATT-sync-btn');
+  if (btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
+  try {
+    const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/eventbrite-sync?mode=sync');
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const { data: atts } = await sb.from('attendees').select('*').order('created_at', { ascending: false });
+    if (atts) { attendees = atts; rAttendees(); }
+    toast('Eventbrite synced', `${data.synced} attendee${data.synced !== 1 ? 's' : ''} loaded`, '');
+  } catch(e) {
+    toast('Sync failed', e.message, 'err');
+  } finally {
+    if (btn) { btn.textContent = '⟳ Sync Eventbrite'; btn.disabled = false; }
+  }
+}
+
 function exportAttendeesCSV(){
   const rows=[['First Name','Last Name','Email','Ticket Type','Order ID','Order Date','Status','Checked In At']];
   attendees.forEach(a=>rows.push([a.first_name,a.last_name,a.email,a.ticket_type,a.order_id,a.order_date,a.status,a.checked_in_at||'']));
