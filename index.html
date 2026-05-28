@@ -1623,6 +1623,26 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 .fe-move-opt.active{background:var(--bl);color:var(--blue);font-weight:600;}
 .fe-move-indent{padding-left:20px;}
 
+
+/* ── ATTENDEE TIMESLOT TABS ── */
+.att-tabs{display:flex;gap:0;border-bottom:2px solid var(--grb);margin-bottom:16px;overflow-x:auto;flex-wrap:nowrap;}
+.att-tab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.att-tab:hover{color:var(--text);}
+.att-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.att-tab-badge{display:inline-block;background:var(--grl);color:var(--tm);font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:5px;vertical-align:middle;}
+.att-tab.active .att-tab-badge{background:var(--bl);color:var(--bt);}
+/* Checked-in row highlight */
+.att-table tbody tr.att-checked-in td{background:#f0fdf4 !important;}
+.att-table tbody tr.att-checked-in td:first-child{border-left:3px solid var(--green2);}
+.att-checked-in-name{font-weight:600;color:var(--green2);}
+.att-checked-in-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--gt);background:var(--gl);padding:2px 7px;border-radius:20px;margin-left:6px;}
+/* Timeslot summary cards */
+.att-timeslot-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px;}
+.att-ts-card{background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:var(--r);padding:14px 16px;box-shadow:var(--glass-shadow);}
+.att-ts-card-date{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:4px;}
+.att-ts-card-time{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.att-ts-card-count{font-family:var(--font-condensed);font-size:32px;font-weight:700;color:var(--navy);}
+.att-ts-card-sub{font-size:11px;color:var(--tm);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -2521,6 +2541,25 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <div class="att-cin-result" id="ATT-cin-result"></div>
   </div>
 
+  <!-- Timeslot tabs -->
+  <div class="att-tabs" id="ATT-tabs">
+    <div class="att-tab active" data-slot="all" onclick="setAttTab('all')">
+      All Attendees <span class="att-tab-badge" id="ATT-badge-all">0</span>
+    </div>
+    <div class="att-tab" data-slot="jun12am" onclick="setAttTab('jun12am')">
+      Jun 12 · Morning <span class="att-tab-badge" id="ATT-badge-jun12am">0</span>
+    </div>
+    <div class="att-tab" data-slot="jun12pm" onclick="setAttTab('jun12pm')">
+      Jun 12 · Afternoon <span class="att-tab-badge" id="ATT-badge-jun12pm">0</span>
+    </div>
+    <div class="att-tab" data-slot="jun13am" onclick="setAttTab('jun13am')">
+      Jun 13 · Morning <span class="att-tab-badge" id="ATT-badge-jun13am">0</span>
+    </div>
+    <div class="att-tab" data-slot="jun13pm" onclick="setAttTab('jun13pm')">
+      Jun 13 · Afternoon <span class="att-tab-badge" id="ATT-badge-jun13pm">0</span>
+    </div>
+  </div>
+
   <!-- Toolbar -->
   <div class="att-toolbar">
     <input class="att-search" id="ATT-search" type="text" placeholder="Search name or email…" oninput="filterAttendees()">
@@ -2528,8 +2567,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <select class="att-filter-sel" id="ATT-filter-status" onchange="filterAttendees()">
       <option value="">All statuses</option>
       <option value="registered">Registered</option>
-      <option value="checked_in">Checked in</option>
-      <option value="cancelled">Cancelled</option>
+      <option value="checked_in">Checked in ✓</option>
     </select>
     <label class="att-checkin-toggle" id="ATT-cin-toggle" onclick="toggleCheckinMode()">
       <input type="checkbox" id="ATT-cin-cb" style="display:none"> Check-in mode
@@ -2540,8 +2578,8 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   <div class="att-table-wrap">
     <table class="att-table" id="ATT-table">
       <thead><tr>
-        <th>Name</th><th>Email</th><th>Ticket type</th>
-        <th>Order date</th><th>Status</th><th style="width:100px;"></th>
+        <th>Name</th><th>Email</th><th>Ticket</th>
+        <th>Registered</th><th>Status</th><th style="width:100px;"></th>
       </tr></thead>
       <tbody id="ATT-tbody"></tbody>
     </table>
@@ -5266,86 +5304,147 @@ function renderAttStats(){
 }
 
 // ── FILTER + RENDER ──
+// ── TIMESLOT TABS ──
+const ATT_SLOTS = {
+  all: { label: 'All Attendees', tickets: null, dedup: true },
+  jun12am: { label: 'Jun 12 · Morning', tickets: ['June 12th Morning / Early Afternoon','BOTH Days'], dedup: false },
+  jun12pm: { label: 'Jun 12 · Afternoon/Evening', tickets: ['June 12th Midafternoon / Evening','BOTH Days'], dedup: false },
+  jun13am: { label: 'Jun 13 · Morning', tickets: ['June 13th Morning / Early Afternoon','BOTH Days'], dedup: false },
+  jun13pm: { label: 'Jun 13 · Afternoon/Evening', tickets: ['June 13th Midafternoon / Evening','BOTH Days'], dedup: false },
+};
+let attCurrentSlot = 'all';
+
+function setAttTab(slot) {
+  attCurrentSlot = slot;
+  document.querySelectorAll('.att-tab').forEach(t => t.classList.toggle('active', t.dataset.slot === slot));
+  filterAttendees();
+}
+
+function getSlotAttendees(slot) {
+  const def = ATT_SLOTS[slot]; if(!def) return [];
+  let list = attendees.filter(a => !['cancelled','Cancelled','refunded'].includes(a.status));
+  if (def.tickets) {
+    list = list.filter(a => {
+      const tc = a.ticket_class || a.ticket_type || '';
+      return def.tickets.some(t => tc === t || tc.toLowerCase().includes(t.split(' ')[0].toLowerCase()));
+    });
+  }
+  if (def.dedup) {
+    const seen = new Set();
+    list = list.filter(a => {
+      const key = (a.email||a.id||'').toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
+  return list;
+}
+
+function updateTabBadges() {
+  Object.keys(ATT_SLOTS).forEach(slot => {
+    const el = document.getElementById(`ATT-badge-${slot}`);
+    if (el) el.textContent = getSlotAttendees(slot).length;
+  });
+}
+
 function filterAttendees(){
   const q=(document.getElementById('ATT-search')?.value||'').toLowerCase();
   const tk=document.getElementById('ATT-filter-ticket')?.value||'';
   const st=document.getElementById('ATT-filter-status')?.value||'';
-  attFiltered=attendees.filter(a=>{
-    if(q&&!`${a.first_name} ${a.last_name} ${a.email}`.toLowerCase().includes(q))return false;
-    if(tk&&a.ticket_type!==tk)return false;
-    if(st&&a.status!==st)return false;
+  let base = getSlotAttendees(attCurrentSlot);
+  attFiltered = base.filter(a=>{
+    const name=`${a.first_name||''} ${a.last_name||''} ${a.email||''}`.toLowerCase();
+    if(q&&!name.includes(q))return false;
+    if(tk&&(a.ticket_class||a.ticket_type||'')!==tk)return false;
+    const ci=a.checked_in||a.status==='checked_in';
+    if(st==='checked_in'&&!ci)return false;
+    if(st==='registered'&&ci)return false;
     return true;
   });
-  renderAttTable();
-  renderAttCards();
+  renderAttTable(); renderAttCards();
   const lbl=document.getElementById('ATT-count-label');
-  if(lbl)lbl.textContent=`${attFiltered.length.toLocaleString()} of ${attendees.length.toLocaleString()} attendees`;
+  if(lbl)lbl.textContent=`${attFiltered.length.toLocaleString()} ${ATT_SLOTS[attCurrentSlot]?.label||''}`;
+  updateTabBadges();
 }
 
 function rAttendees(){
   renderAttStats();renderGoal();renderTrendChart();
-  updateTicketFilter();
-  filterAttendees();
+  updateTicketFilter(); updateTabBadges(); filterAttendees();
 }
 
 function updateTicketFilter(){
   const sel=document.getElementById('ATT-filter-ticket');if(!sel)return;
   const cur=sel.value;
-  const types=[...new Set(attendees.map(a=>a.ticket_type).filter(Boolean))].sort();
+  const types=[...new Set(attendees.map(a=>a.ticket_class||a.ticket_type).filter(Boolean))].sort();
   sel.innerHTML='<option value="">All ticket types</option>'+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
   sel.value=cur;
 }
 
 function renderAttTable(){
   const tbody=document.getElementById('ATT-tbody');if(!tbody)return;
-  if(!attFiltered.length){tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tm);">${attendees.length?'No attendees match your search.':'No attendees imported yet. Upload your Eventbrite CSV above.'}</td></tr>`;return;}
-  const sorted=[...attFiltered].sort((a,b)=>new Date(b.order_date||0)-new Date(a.order_date||0));
-  tbody.innerHTML=sorted.slice(0,200).map(a=>{
+  if(!attFiltered.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tm);">${attendees.length?'No matches.':'No attendees yet — hit Sync now.'}</td></tr>`;
+    return;
+  }
+  const sorted=[...attFiltered].sort((a,b)=>{
+    const aci=a.checked_in||a.status==='checked_in';
+    const bci=b.checked_in||b.status==='checked_in';
+    if(aci&&!bci)return 1; if(!aci&&bci)return -1;
+    return(a.first_name||'').localeCompare(b.first_name||'');
+  });
+  tbody.innerHTML=sorted.slice(0,500).map(a=>{
     const name=`${a.first_name||''} ${a.last_name||''}`.trim()||'Unknown';
-    const ci=a.status==='checked_in';
-    return`<tr class="${a.status||''}" data-id="${a.id}">
-      <td class="att-name-cell">${esc(name)}</td>
+    const ci=a.checked_in||a.status==='checked_in';
+    const ticket=a.ticket_class||a.ticket_type||'General';
+    return`<tr class="${ci?'att-checked-in':''}" data-id="${a.id}">
+      <td class="att-name-cell">${ci?`<span class="att-checked-in-name">${esc(name)}</span><span class="att-checked-in-badge">✓ In</span>`:esc(name)}</td>
       <td class="att-email-cell">${esc(a.email||'—')}</td>
-      <td><span class="att-ticket-pill">${esc(a.ticket_type||'General')}</span></td>
-      <td style="color:var(--tm);font-size:12px;">${a.order_date||'—'}</td>
-      <td><span class="att-status-pill sp-${a.status||'registered'}">${(a.status||'registered').replace('_',' ')}</span></td>
+      <td><span class="att-ticket-pill" style="font-size:11px;">${esc(ticket)}</span></td>
+      <td style="color:var(--tm);font-size:12px;">${a.created?new Date(a.created).toLocaleDateString('en-US',{month:'short',day:'numeric'}):a.order_date||'—'}</td>
+      <td><span class="att-status-pill sp-${ci?'checked_in':a.status||'registered'}">${ci?'Checked in ✓':(a.status||'registered').replace('_',' ')}</span></td>
       <td>${ci?`<button class="att-checkin-btn done" disabled>✓ In</button>`:`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`}</td>
     </tr>`;
   }).join('');
-  if(sorted.length>200)tbody.insertAdjacentHTML('beforeend',`<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--tm);font-size:12px;">Showing 200 of ${sorted.length} — use search to narrow down</td></tr>`);
+  if(sorted.length>500)tbody.insertAdjacentHTML('beforeend',`<tr><td colspan="6" style="text-align:center;padding:12px;color:var(--tm);font-size:12px;">Showing 500 of ${sorted.length} — use search to narrow</td></tr>`);
 }
 
 function renderAttCards(){
   const grid=document.getElementById('ATT-cards');if(!grid)return;
-  if(!attFiltered.length){grid.innerHTML=`<div style="text-align:center;padding:24px;font-size:13px;color:var(--tm);">${attendees.length?'No matches.':'Upload your Eventbrite CSV to see attendees.'}</div>`;return;}
-  const sorted=[...attFiltered].sort((a,b)=>new Date(b.order_date||0)-new Date(a.order_date||0));
+  if(!attFiltered.length){grid.innerHTML=`<div style="text-align:center;padding:24px;font-size:13px;color:var(--tm);">${attendees.length?'No matches.':'No attendees yet.'}</div>`;return;}
+  const sorted=[...attFiltered].sort((a,b)=>{
+    const aci=a.checked_in||a.status==='checked_in';
+    const bci=b.checked_in||b.status==='checked_in';
+    if(aci&&!bci)return 1; if(!aci&&bci)return -1;
+    return(a.first_name||'').localeCompare(b.first_name||'');
+  });
   grid.innerHTML=sorted.slice(0,100).map(a=>{
     const name=`${a.first_name||''} ${a.last_name||''}`.trim()||'Unknown';
     const ini=name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'?';
     const col=avc(a.email||name);
-    const ci=a.status==='checked_in';
-    return`<div class="att-card${ci?' checked-in':''}" data-id="${a.id}">
-      <div class="att-card-av" style="background:${col}">${ini}</div>
+    const ci=a.checked_in||a.status==='checked_in';
+    const ticket=a.ticket_class||a.ticket_type||'General';
+    return`<div class="att-card${ci?' checked-in':''}" data-id="${a.id}" style="${ci?'border:1px solid var(--green2);background:#f0fdf4;':''}">
+      <div class="att-card-av" style="background:${ci?'var(--green2)':col}">${ci?'✓':ini}</div>
       <div class="att-card-info">
-        <div class="att-card-name">${esc(name)}</div>
+        <div class="att-card-name" style="${ci?'color:var(--green2);font-weight:700;':''}">${esc(name)}</div>
         <div class="att-card-email">${esc(a.email||'—')}</div>
         <div class="att-card-meta">
-          <span class="att-ticket-pill">${esc(a.ticket_type||'General')}</span>
-          <span class="att-status-pill sp-${a.status||'registered'}">${(a.status||'registered').replace('_',' ')}</span>
+          <span class="att-ticket-pill" style="font-size:10px;">${esc(ticket)}</span>
+          <span class="att-status-pill sp-${ci?'checked_in':a.status||'registered'}">${ci?'✓ In':(a.status||'registered').replace('_',' ')}</span>
         </div>
       </div>
-      ${!ci?`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`:'<span style="font-size:18px;">✅</span>'}
+      ${!ci?`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`:'<span style="font-size:20px;">✅</span>'}
     </div>`;
   }).join('');
 }
 
 // ── CHECK-IN ──
 async function checkIn(id){
-  const att=attendees.find(a=>a.id===id);if(!att||att.status==='checked_in')return;
-  att.status='checked_in';att.checked_in_at=new Date().toISOString();
-  filterAttendees();renderAttStats();
+  const att=attendees.find(a=>a.id===id);if(!att||att.checked_in||att.status==='checked_in')return;
+  att.status='checked_in'; att.checked_in=true; att.checked_in_at=new Date().toISOString();
+  filterAttendees(); renderAttStats(); updateTabBadges();
   toast('✓ Checked in',`${att.first_name||''} ${att.last_name||''}`.trim()||att.email,'');
-  await sb.from('attendees').update({status:'checked_in',checked_in_at:att.checked_in_at}).eq('id',id);
+  await sb.from('attendees').update({status:'checked_in',checked_in:true,checked_in_at:att.checked_in_at}).eq('id',id);
 }
 
 // ── CHECK-IN MODE ──
