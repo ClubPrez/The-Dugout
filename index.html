@@ -1779,11 +1779,11 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <div class="nt" onclick="gp('sponsors')">Steering Committee</div>
     <div class="nt" onclick="gp('budget')">Budget</div>
     <div class="nt" onclick="gp('receipts')">Receipts</div>
-    <div class="nt" onclick="gp('meetings')">Meetings</div>
-    <div class="nt" onclick="gp('projects')">Projects</div>
-    <div class="nt" onclick="gp('assets')">Assets</div>
+    <div class="nt" onclick="gp('meetings')" style="display:none">Meetings</div>
+    <div class="nt" onclick="gp('projects')" style="display:none">Projects</div>
+    <div class="nt" onclick="gp('assets')" style="display:none">Assets</div>
     <div class="nt" onclick="gp('attendees')">Attendees</div>
-    <div class="nt" onclick="gp('surveys')">Surveys</div>
+    <div class="nt" onclick="gp('surveys')" style="display:none">Surveys</div>
     <div class="nt" onclick="gp('vendors')">Vendors</div>
   </div>
   <!-- NAV ROW 2: Committees -->
@@ -2064,116 +2064,96 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 
 <!-- RECEIPTS -->
 <div class="panel" id="panel-receipts">
-  <div class="ru-header">
-    <div class="ru-title">Receipt Aggregator</div>
-    <div class="ru-subtitle">AI-powered · Auto-categorizes line items</div>
-  </div>
-
-  <!-- Desktop: drag/drop zone -->
-  <div class="receipt-upload" id="RU-drop" onclick="document.getElementById('RU-file-pick').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-    <input type="file" id="RU-file-pick" accept="image/*" onchange="handleFileSelected(this.files[0])">
-    <div style="font-size:36px;margin-bottom:10px;">📷</div>
-    <h3>Upload or photograph a receipt</h3>
-    <p>Drag & drop · Click to select · AI reads and categorizes every line item</p>
-    <div class="ru-desktop-row">
-      <select class="mi" id="RU-sponsor" style="width:auto;font-size:12px;padding:5px 10px;border-radius:6px;" onclick="event.stopPropagation()">
-        <option value="">Who's submitting?</option>
-      </select>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div style="font-family:var(--font-condensed);font-size:22px;font-weight:700;">Receipts</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="document.getElementById('RCP-file-input').click()" style="font-size:13px;">📷 Upload receipt</button>
     </div>
   </div>
 
-  <!-- Mobile: two big buttons -->
-  <div class="ru-mobile" id="RU-mobile">
-    <div class="ru-mobile-btns">
-      <label class="ru-cam-btn primary" for="RU-file-cam">
-        <input type="file" id="RU-file-cam" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelected(this.files[0])">
-        <div class="ru-cam-icon">📷</div>
-        <div class="ru-cam-label">Take photo</div>
-        <div class="ru-cam-sub">Opens your camera</div>
-      </label>
-      <label class="ru-cam-btn" for="RU-file-gal">
-        <input type="file" id="RU-file-gal" accept="image/*" style="display:none" onchange="handleFileSelected(this.files[0])">
-        <div class="ru-cam-icon">🖼️</div>
-        <div class="ru-cam-label">Choose photo</div>
-        <div class="ru-cam-sub">From your gallery</div>
-      </label>
-    </div>
-    <select class="mi" id="RU-sponsor-m" style="font-size:13px;">
-      <option value="">Who's submitting? (Steering Committee member)</option>
-    </select>
+  <input type="file" id="RCP-file-input" multiple accept="image/*,application/pdf" style="display:none" onchange="uploadReceipts(this.files)">
+
+  <!-- Upload drop zone -->
+  <div id="RCP-dropzone" style="border:2px dashed var(--grb);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:18px;background:rgba(255,255,255,0.5);"
+    ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--bl)'"
+    ondragleave="this.style.borderColor='var(--grb)';this.style.background='rgba(255,255,255,0.5)'"
+    ondrop="event.preventDefault();this.style.borderColor='var(--grb)';this.style.background='rgba(255,255,255,0.5)';uploadReceipts(event.dataTransfer.files)"
+    onclick="document.getElementById('RCP-file-input').click()">
+    <div style="font-size:32px;margin-bottom:8px;">🧾</div>
+    <div style="font-size:14px;font-weight:500;color:var(--tm);">Drop receipts here or click to upload</div>
+    <div style="font-size:12px;color:var(--tt);margin-top:4px;">Images or PDFs · Stored in Supabase</div>
   </div>
 
-  <!-- Photo preview step -->
-  <div class="photo-preview" id="PP">
-    <div class="pp-img-wrap">
-      <img id="PP-img" src="" alt="Receipt preview">
-      <div class="pp-quality" id="PP-quality"></div>
+  <!-- Upload progress -->
+  <div id="RCP-progress" style="display:none;background:var(--gl);border-radius:8px;padding:10px 14px;margin-bottom:14px;">
+    <div id="RCP-progress-name" style="font-size:13px;font-weight:500;margin-bottom:5px;">Uploading…</div>
+    <div style="height:4px;background:var(--grb);border-radius:2px;overflow:hidden;">
+      <div id="RCP-progress-fill" style="height:100%;background:var(--green2);border-radius:2px;transition:width .3s;width:0%"></div>
     </div>
-    <div class="pp-body">
-      <div class="pp-hint" id="PP-hint">Make sure the receipt text is clear and well-lit before analyzing.</div>
-      <div class="pp-sponsor-row">
-        <label>Who's submitting? (Steering Committee member)</label>
-        <select class="mi" id="PP-sponsor" style="font-size:13px;">
-          <option value="">— Select sponsor —</option>
+  </div>
+
+  <!-- Summary bar -->
+  <div id="RCP-summary" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;"></div>
+
+  <!-- Filter -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <button class="receipt-filter-btn active" data-f="all" onclick="filterRcp('all')">All</button>
+    <button class="receipt-filter-btn" data-f="unpaid" onclick="filterRcp('unpaid')">Unpaid</button>
+    <button class="receipt-filter-btn" data-f="paid" onclick="filterRcp('paid')">Paid ✓</button>
+  </div>
+
+  <!-- Receipt grid -->
+  <div id="RCP-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;"></div>
+</div>
+
+<!-- Receipt detail modal -->
+<div id="RCP-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:800;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target.id==='RCP-modal')closeRcpModal()">
+  <div style="background:white;border-radius:16px;padding:24px;width:min(480px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.25);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;" id="RCP-modal-title">Receipt</div>
+      <button onclick="closeRcpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tm);">✕</button>
+    </div>
+    <img id="RCP-modal-img" src="" style="width:100%;border-radius:8px;margin-bottom:14px;display:none;">
+    <div id="RCP-modal-pdf" style="display:none;margin-bottom:14px;">
+      <a id="RCP-modal-pdf-link" href="#" target="_blank" style="display:flex;align-items:center;gap:8px;padding:14px;background:var(--grl);border-radius:8px;text-decoration:none;color:var(--text);">
+        <span style="font-size:28px;">📄</span>
+        <span style="font-size:14px;font-weight:500;">View PDF</span>
+      </a>
+    </div>
+    <div style="display:grid;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Description</label>
+        <input type="text" id="RCP-modal-desc" placeholder="What is this receipt for?" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Amount</label>
+        <input type="number" id="RCP-modal-amount" placeholder="0.00" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Committee</label>
+        <select id="RCP-modal-committee" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+          <option value="">Select committee</option>
+          <option value="mkt">Marketing</option>
+          <option value="fb">Food & Bev</option>
+          <option value="gx">Guest Experience</option>
+          <option value="inv">Inventory</option>
+          <option value="vol">Volunteers</option>
         </select>
       </div>
-      <div class="pp-btns">
-        <button class="btn btn-secondary" onclick="retakePhoto()">Retake / Cancel</button>
-        <button class="btn btn-primary" onclick="analyzePhoto()">Analyze with AI →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- AI processing with steps -->
-  <div class="ai-processing" id="AI-proc">
-    <div class="spin" style="margin:0 auto;"></div>
-    <div class="ai-steps">
-      <div class="ai-step" id="ai-s1"><div class="ai-step-dot"></div>Reading receipt image</div>
-      <div class="ai-step" id="ai-s2"><div class="ai-step-dot"></div>Extracting line items</div>
-      <div class="ai-step" id="ai-s3"><div class="ai-step-dot"></div>Matching to budget areas</div>
-      <div class="ai-step" id="ai-s4"><div class="ai-step-dot"></div>Checking for duplicates</div>
-    </div>
-  </div>
-
-  <!-- Receipt review -->
-  <div class="receipt-preview" id="RP">
-    <div class="dup-warning" id="DUP-warn">
-      <strong>Possible duplicate.</strong> A receipt from <span id="DUP-vendor"></span> for <span id="DUP-amt"></span> on <span id="DUP-date"></span> already exists.
-    </div>
-    <div class="rp-head">
       <div>
-        <div class="rp-vendor" id="RP-vendor">Vendor</div>
-        <div style="font-size:12px;color:var(--tm);" id="RP-date"></div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--tm);text-align:right;">Total</div>
-        <div class="rp-total" id="RP-total">$0.00</div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Status</label>
+        <div style="display:flex;gap:8px;">
+          <button id="RCP-btn-unpaid" onclick="setRcpStatus('unpaid')" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--red);background:white;color:var(--red);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">Unpaid</button>
+          <button id="RCP-btn-paid" onclick="setRcpStatus('paid')" style="flex:1;padding:10px;border-radius:8px;border:2px solid var(--grb);background:white;color:var(--tm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;">Paid ✓</button>
+        </div>
       </div>
     </div>
-    <div class="rp-items" id="RP-items"></div>
-    <div class="rp-foot">
-      <button class="btn btn-secondary" onclick="cancelReceipt()">Cancel</button>
-      <button class="btn btn-primary" onclick="approveReceipt()">Approve & save</button>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeRcpModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveRcpModal()">Save</button>
+      <button onclick="deleteRcp()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--rl);background:var(--rl);color:var(--rt);cursor:pointer;font-family:var(--font);font-size:13px;">Delete</button>
     </div>
   </div>
-
-  <div class="sh">Receipt history</div>
-
-  <!-- Year folder tabs -->
-  <div class="receipt-years" id="RECEIPT-years"></div>
-
-  <!-- Year summary bar -->
-  <div class="receipt-year-summary" id="RECEIPT-summary" style="display:none;"></div>
-
-  <!-- Status filters -->
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    <button class="receipt-filter-btn active" id="rrf-all" onclick="filterReceipts('all')">All</button>
-    <button class="receipt-filter-btn" id="rrf-pending" onclick="filterReceipts('pending')">Pending approval</button>
-    <button class="receipt-filter-btn" id="rrf-approved" onclick="filterReceipts('approved')">Approved</button>
-    <button class="receipt-filter-btn" id="rrf-rejected" onclick="filterReceipts('rejected')">Rejected</button>
-  </div>
-
-  <div class="receipt-history" id="RH"></div>
 </div>
 
 <!-- MEETINGS -->
@@ -2635,7 +2615,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 <div class="panel" id="panel-decision-map">
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
     <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;flex:1;">Decision Map</div>
-    <button class="btn btn-secondary" style="font-size:13px;padding:7px 14px;" onclick="gp('meetings')">← Meetings</button>
+    <button class="btn btn-secondary" style="font-size:13px;padding:7px 14px;" onclick="gp('meetings')" style="display:none">← Meetings</button>
     <button class="btn btn-primary" style="font-size:13px;padding:7px 14px;" onclick="openDMEdit(null)">+ Add decision</button>
   </div>
   <div class="al al-b" style="margin-bottom:16px;"><strong>Organizational memory.</strong> Every formal decision ever made — built and updated by AI after each meeting. Search, browse by committee or type, and track how thinking has evolved over time.</div>
@@ -3645,8 +3625,10 @@ function getAllFolders() {
 }
 
 function getFolderChildren(parentId) {
-  const all = getAllFolders();
-  return all.filter(f => parentId === 'root' ? (!f.parent_id || f.parent_id === 'root') : f.parent_id === parentId);
+  // Only custom folders can be children — hardcoded FOLDERS are all root level
+  if (parentId === 'root') return getAllFolders().filter(f => !f.parent_id || f.parent_id === 'root');
+  // Only custom folders can nest
+  return customFolders.filter(f => f.parent_id === parentId).map(f => ({ ...f, custom: true }));
 }
 
 function rSidebar() {
@@ -3656,10 +3638,11 @@ function rSidebar() {
 }
 
 function renderSidebarLevel(container, parentId, depth) {
+  if (depth > 5) return; // Hard guard against infinite recursion
   getFolderChildren(parentId).forEach(f => {
     const isActive = feFolder === f.id;
     const count = assets.filter(a => a.folder === f.id && a.category !== 'folder').length;
-    const subChildren = getFolderChildren(f.id);
+    const subChildren = depth < 4 ? customFolders.filter(c => c.parent_id === f.id) : [];
 
     const wrap = document.createElement('div');
     if (depth > 0) wrap.style.paddingLeft = (depth * 14) + 'px';
@@ -3668,7 +3651,7 @@ function renderSidebarLevel(container, parentId, depth) {
     item.className = 'fe-sidebar-item' + (isActive ? ' active' : '');
     item.dataset.folderId = f.id;
     const _dbl = f.custom ? `ondblclick="event.stopPropagation();renameSidebarFolder('${f.id}',this)"` : '';
-    const _mov = f.custom ? `<button class="fe-sidebar-item-del" onclick="event.stopPropagation();openMoveFolder('${f.id}')" title="Move" style="color:var(--tm);">↔</button><button class="fe-sidebar-item-del" onclick="event.stopPropagation();deleteAssetFolder('${f.id}')" title="Delete">✕</button>` : '';
+    const _mov = f.custom ? `<button class="fe-sidebar-item-del" onclick="event.stopPropagation();deleteAssetFolder('${f.id}')" title="Delete">✕</button>` : '';
     const _cnt = count ? `<span style="font-size:10px;color:${isActive?'rgba(37,99,235,0.6)':'var(--tt)'}">${count}</span>` : '';
     item.innerHTML = `
       <span style="font-size:14px;flex-shrink:0;">${f.icon||'📁'}</span>
@@ -3678,21 +3661,6 @@ function renderSidebarLevel(container, parentId, depth) {
       ${_cnt}${_mov}`;
 
     item.onclick = () => selectAssetFolder(f.id, f.label);
-
-    if (f.custom) {
-      item.draggable = true;
-      item.ondragstart = e => { e.dataTransfer.setData('folder-id', f.id); item.classList.add('dragging'); };
-      item.ondragend = () => item.classList.remove('dragging');
-    }
-    item.ondragover = e => { e.preventDefault(); item.classList.add('drag-over'); };
-    item.ondragleave = () => item.classList.remove('drag-over');
-    item.ondrop = async e => {
-      e.preventDefault(); e.stopPropagation(); item.classList.remove('drag-over');
-      const fid = e.dataTransfer.getData('folder-id');
-      const fileId = e.dataTransfer.getData('file-id');
-      if (fid && fid !== f.id) await moveFolderTo(fid, f.id);
-      if (fileId) await moveFileTo(fileId, f.id);
-    };
 
     wrap.appendChild(item);
     if (subChildren.length) {
@@ -5243,7 +5211,7 @@ async function handleAttendeeCSV(file){
 
 // ── MILESTONE TOASTS ──
 function checkMilestones(){
-  const total=attendees.filter(a=>a.status!=='cancelled').length;
+  const total=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
   ATT_MILESTONES.forEach(ms=>{
     if(total>=ms&&prevAttCount<ms){
       toast(`🎉 ${ms.toLocaleString()} registered!`,`Leadoff Lounge has hit ${ms} registrations!`,'');
@@ -5276,7 +5244,7 @@ function renderTrendChart(){
 
 // ── GOAL PROGRESS ──
 function renderGoal(){
-  const total=attendees.filter(a=>a.status!=='cancelled').length;
+  const total=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
   const checkedIn=attendees.filter(a=>a.status==='checked_in').length;
   const pct=Math.min(100,Math.round(total/ATT_GOAL*100));
   const el=id=>document.getElementById(id);
@@ -5291,7 +5259,7 @@ function renderGoal(){
 
 // ── STATS ──
 function renderAttStats(){
-  const total=attendees.filter(a=>a.status!=='cancelled').length;
+  const total=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
   const checkedIn=attendees.filter(a=>a.status==='checked_in').length;
   const pct=Math.round(total/ATT_GOAL*100);
   const el=document.getElementById('ATT-stats');
@@ -5322,21 +5290,20 @@ function setAttTab(slot) {
 
 function getSlotAttendees(slot) {
   const def = ATT_SLOTS[slot]; if(!def) return [];
-  let list = attendees.filter(a => !['cancelled','Cancelled','refunded'].includes(a.status));
+  let list = attendees.filter(a => !['cancelled','Cancelled','refunded','Not Attending'].includes(a.status));
   if (def.tickets) {
     list = list.filter(a => {
       const tc = a.ticket_class || a.ticket_type || '';
       return def.tickets.some(t => tc === t || tc.toLowerCase().includes(t.split(' ')[0].toLowerCase()));
     });
   }
-  if (def.dedup) {
-    const seen = new Set();
-    list = list.filter(a => {
-      const key = (a.email||a.id||'').toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key); return true;
-    });
-  }
+  // Always dedup by email within each slot
+  const seen = new Set();
+  list = list.filter(a => {
+    const key = (a.email||a.id||'').toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
   return list;
 }
 
@@ -7055,7 +7022,208 @@ setInterval(rMilestones, 60000);
 // ══════════════════════════════════════
 // ── RECEIPT APPROVAL WORKFLOW ──
 // ══════════════════════════════════════
-// ── RECEIPT YEAR FOLDERS ──
+// ══════════════════════════════════════
+// ── RECEIPTS (simple) ──
+// ══════════════════════════════════════
+let rcpFilter = 'all';
+let rcpModalId = null;
+let rcpModalStatus = 'unpaid';
+let simpleReceipts = []; // loaded from supabase storage + receipts table
+
+async function loadSimpleReceipts() {
+  const { data } = await sb.from('simple_receipts')
+    .select('*').order('created_at', { ascending: false });
+  if (data) { simpleReceipts = data; rReceipts(); }
+}
+
+function rReceipts() {
+  rRcpSummary();
+  rRcpGrid();
+}
+
+function rRcpSummary() {
+  const el = document.getElementById('RCP-summary'); if (!el) return;
+  const all = simpleReceipts;
+  const paid = all.filter(r => r.status === 'paid');
+  const unpaid = all.filter(r => r.status !== 'paid');
+  const totalPaid = paid.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalUnpaid = unpaid.reduce((s, r) => s + Number(r.amount || 0), 0);
+  el.innerHTML = `
+    <div style="background:var(--gl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--gt);">${fmt$(totalPaid)}</div>
+      <div style="font-size:11px;color:var(--gt);text-transform:uppercase;letter-spacing:.06em;">Paid · ${paid.length} receipt${paid.length!==1?'s':''}</div>
+    </div>
+    <div style="background:var(--rl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--rt);">${fmt$(totalUnpaid)}</div>
+      <div style="font-size:11px;color:var(--rt);text-transform:uppercase;letter-spacing:.06em;">Unpaid · ${unpaid.length} receipt${unpaid.length!==1?'s':''}</div>
+    </div>
+    <div style="background:var(--bl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--bt);">${fmt$(totalPaid + totalUnpaid)}</div>
+      <div style="font-size:11px;color:var(--bt);text-transform:uppercase;letter-spacing:.06em;">Total · ${all.length} receipts</div>
+    </div>`;
+}
+
+function filterRcp(f) {
+  rcpFilter = f;
+  document.querySelectorAll('[data-f]').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  rRcpGrid();
+}
+
+function rRcpGrid() {
+  const grid = document.getElementById('RCP-grid'); if (!grid) return;
+  const filtered = rcpFilter === 'all' ? simpleReceipts
+    : simpleReceipts.filter(r => r.status === rcpFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tm);">
+      <div style="font-size:36px;margin-bottom:10px;">🧾</div>
+      <div style="font-size:15px;font-weight:500;">${rcpFilter==='all'?'No receipts yet':'No '+rcpFilter+' receipts'}</div>
+      <div style="font-size:13px;margin-top:6px;">Click "Upload receipt" or drop images above</div>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  filtered.forEach(r => {
+    const isPaid = r.status === 'paid';
+    const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
+    const card = document.createElement('div');
+    card.style.cssText = `background:white;border:2px solid ${isPaid?'var(--green2)':'var(--red)'};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;`;
+    card.onmouseover = () => card.style.transform = 'translateY(-2px)';
+    card.onmouseout = () => card.style.transform = '';
+    card.onclick = () => openRcpModal(r);
+    card.innerHTML = `
+      <div style="height:140px;background:var(--grl);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
+        ${isImg ? `<img src="${esc(r.file_url)}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:48px;">📄</span>`}
+        <div style="position:absolute;top:8px;right:8px;background:${isPaid?'var(--green2)':'var(--red)'};color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">${isPaid?'PAID':'UNPAID'}</div>
+      </div>
+      <div style="padding:10px 12px;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description||'Receipt')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <div style="font-size:12px;color:var(--tm);">${r.committee?.toUpperCase()||'—'}</div>
+          <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;">${r.amount?fmt$(r.amount):'—'}</div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+async function uploadReceipts(files) {
+  if (!files?.length) return;
+  const prog = document.getElementById('RCP-progress');
+  const progName = document.getElementById('RCP-progress-name');
+  const progFill = document.getElementById('RCP-progress-fill');
+
+  for (const file of Array.from(files)) {
+    prog.style.display = 'block';
+    progName.textContent = `Uploading ${file.name}…`;
+    progFill.style.width = '20%';
+
+    try {
+      const path = `receipts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: upErr } = await sb.storage.from('leadoff-assets').upload(path, file, { cacheControl:'3600', upsert:false });
+      if (upErr) throw upErr;
+      progFill.style.width = '70%';
+
+      const { data: urlData } = sb.storage.from('leadoff-assets').getPublicUrl(path);
+      const { data: rec } = await sb.from('simple_receipts').insert({
+        file_url: urlData.publicUrl,
+        storage_path: path,
+        file_name: file.name,
+        mime_type: file.type,
+        file_size: file.size,
+        status: 'unpaid',
+        description: '',
+        amount: null,
+        committee: '',
+        uploaded_by: presenceName || 'Committee',
+      }).select().single();
+
+      progFill.style.width = '100%';
+      if (rec) { simpleReceipts.unshift(rec); rReceipts(); }
+      // Auto-open modal for the new receipt
+      if (rec) openRcpModal(rec);
+    } catch(e) {
+      toast('Upload failed', e.message || 'Try again', 'err');
+    }
+  }
+  setTimeout(() => { prog.style.display='none'; progFill.style.width='0%'; }, 800);
+  document.getElementById('RCP-file-input').value = '';
+}
+
+function openRcpModal(r) {
+  rcpModalId = r.id;
+  rcpModalStatus = r.status || 'unpaid';
+  const modal = document.getElementById('RCP-modal');
+  const img = document.getElementById('RCP-modal-img');
+  const pdf = document.getElementById('RCP-modal-pdf');
+  const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
+
+  img.style.display = isImg ? 'block' : 'none';
+  pdf.style.display = isImg ? 'none' : 'block';
+  if (isImg) img.src = r.file_url;
+  else document.getElementById('RCP-modal-pdf-link').href = r.file_url;
+
+  document.getElementById('RCP-modal-title').textContent = r.file_name || 'Receipt';
+  document.getElementById('RCP-modal-desc').value = r.description || '';
+  document.getElementById('RCP-modal-amount').value = r.amount || '';
+  document.getElementById('RCP-modal-committee').value = r.committee || '';
+  setRcpStatus(rcpModalStatus);
+  modal.style.display = 'flex';
+}
+
+function closeRcpModal() {
+  document.getElementById('RCP-modal').style.display = 'none';
+  rcpModalId = null;
+}
+
+function setRcpStatus(s) {
+  rcpModalStatus = s;
+  const paidBtn = document.getElementById('RCP-btn-paid');
+  const unpaidBtn = document.getElementById('RCP-btn-unpaid');
+  if (s === 'paid') {
+    paidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--green2);background:var(--gl);color:var(--gt);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;';
+    unpaidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--grb);background:white;color:var(--tm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;';
+  } else {
+    unpaidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--red);background:var(--rl);color:var(--rt);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;';
+    paidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--grb);background:white;color:var(--tm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;';
+  }
+}
+
+async function saveRcpModal() {
+  if (!rcpModalId) return;
+  const data = {
+    description: document.getElementById('RCP-modal-desc').value.trim(),
+    amount: parseFloat(document.getElementById('RCP-modal-amount').value) || null,
+    committee: document.getElementById('RCP-modal-committee').value,
+    status: rcpModalStatus,
+  };
+  closeRcpModal();
+  const idx = simpleReceipts.findIndex(r => r.id === rcpModalId);
+  if (idx !== -1) { simpleReceipts[idx] = { ...simpleReceipts[idx], ...data }; rReceipts(); }
+  await sb.from('simple_receipts').update(data).eq('id', rcpModalId);
+  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || '', '');
+}
+
+async function deleteRcp() {
+  if (!rcpModalId) return;
+  const r = simpleReceipts.find(x => x.id === rcpModalId);
+  if (!confirm(`Delete "${r?.description || 'this receipt'}"?`)) return;
+  closeRcpModal();
+  if (r?.storage_path) await sb.storage.from('leadoff-assets').remove([r.storage_path]);
+  await sb.from('simple_receipts').delete().eq('id', rcpModalId);
+  simpleReceipts = simpleReceipts.filter(x => x.id !== rcpModalId);
+  rReceipts();
+  toast('Receipt deleted', '', 'warn');
+}
+
+// Legacy compat — old receipt functions referenced elsewhere
+function rReceiptYears(){}
+function rReceiptSummary(){}
+function selectReceiptYear(){}
+function filterReceipts(){}
+function approveReceiptPost(){}
+function rejectReceiptPost(){}
 let receiptYear = 2026; // default to current year
 let receiptFilter = 'all';
 
@@ -8287,7 +8455,7 @@ async function init(){
   document.getElementById('CD').textContent=Math.max(0,Math.ceil((new Date('2026-06-12')-new Date())/86400000));
   document.getElementById('LM').textContent='Loading data…';
 
-  const[{data:id,error:ie},{data:rd},{data:spd},{data:bad},{data:recd},{data:rid},{data:asd},{data:shd},{data:annd},{data:attd},{data:pjd},{data:pid},{data:pud},{data:mtgd},{data:mtkd},{data:survd},{data:sqd},{data:srd},{data:msd},{data:dmd},{data:ctd},{data:cpd},{data:vnd},{data:vrd},{data:vqd}]=await Promise.all([
+  const[{data:id,error:ie},{data:rd},{data:spd},{data:bad},{data:recd},{data:rid},{data:asd},{data:shd},{data:annd},{data:attd},{data:pjd},{data:pid},{data:pud},{data:mtgd},{data:mtkd},{data:survd},{data:sqd},{data:srd},{data:msd},{data:dmd},{data:srcd},{data:ctd},{data:cpd},{data:vnd},{data:vrd},{data:vqd}]=await Promise.all([
     sb.from('items').select('*').order('sort_order'),
     sb.from('responsibilities').select('*').order('sort_order'),
     sb.from('sponsors').select('*').order('sort_order'),
@@ -8308,6 +8476,7 @@ async function init(){
     sb.from('survey_responses').select('*').order('submitted_at',{ascending:false}),
     sb.from('milestones').select('*').order('milestone_time'),
     sb.from('decision_map').select('*').order('last_updated',{ascending:false}),
+    sb.from('simple_receipts').select('*').order('created_at',{ascending:false}),
     sb.from('comms_touchpoints').select('*').order('sort_order'),
     sb.from('campaigns').select('*').order('sort_order'),
     sb.from('vendors').select('*').order('name'),
@@ -8326,7 +8495,7 @@ async function init(){
 
   items=id||[];resps=rd||[];sponsors=spd||[];budgetAreas=bad||[];receipts=recd||[];receiptItems=rid||[];assets=asd||[];shifts=shd||[];
   announcements=annd||[];
-  attendees=attd||[];prevAttCount=attendees.filter(a=>a.status!=='cancelled').length;
+  attendees=attd||[];prevAttCount=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
   projects=pjd||[];projectItems=pid||[];projectUpdates=pud||[];
   meetings=mtgd||[];meetingTasks=mtkd||[];
   surveys=survd||[];surveyQuestions=sqd||[];surveyResponses=srd||[];
@@ -8341,6 +8510,7 @@ async function init(){
   rProjects();
   rSurveys();
   rMilestones();
+  rReceipts();
   rDecisionMap();
   fetchWeather();
   checkSurveyURL();
