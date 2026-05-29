@@ -2465,24 +2465,32 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   <!-- Goal progress -->
   <div class="att-goal">
     <div class="att-goal-row">
-      <div class="att-goal-label">Registration progress toward 1,000 attendees</div>
+      <div class="att-goal-label">Registration progress toward 2,000 tickets</div>
       <div class="att-goal-pct" id="ATT-pct">0%</div>
     </div>
     <div class="att-goal-bar"><div class="att-goal-fill" id="ATT-fill" style="width:0%"></div></div>
-    <div class="att-goal-sub" id="ATT-goal-sub">0 registered · 1,000 goal</div>
+    <div class="att-goal-sub" id="ATT-goal-sub">Loading…</div>
     <div class="att-milestones">
       <span class="att-ms" id="ATT-ms250">250 🎯</span>
       <span class="att-ms" id="ATT-ms500">500 🎯</span>
       <span class="att-ms" id="ATT-ms750">750 🎯</span>
-      <span class="att-ms" id="ATT-ms1000">1,000 🎯</span>
+      <span class="att-ms" id="ATT-ms1000">1K 🎯</span>
+      <span class="att-ms" id="ATT-ms1500">1.5K 🎯</span>
+      <span class="att-ms" id="ATT-ms2000">2K 🎯</span>
     </div>
   </div>
 
-  <!-- Trend chart -->
-  <div class="att-trend">
-    <div class="att-trend-title">Registrations by day (last 30 days)</div>
-    <div class="att-trend-chart" id="ATT-chart"></div>
-    <div class="att-trend-labels" id="ATT-chart-labels"></div>
+  <!-- Timeslot chart + Sponsor leaderboard -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;align-items:start;">
+    <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">Expected headcount by timeslot</div>
+      <div class="att-trend-chart" id="ATT-chart" style="height:100px;display:flex;align-items:flex-end;gap:8px;"></div>
+      <div class="att-trend-labels" id="ATT-chart-labels" style="display:flex;gap:8px;margin-top:6px;"></div>
+    </div>
+    <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">Who's driving registrations</div>
+      <div id="ATT-sponsor-board"></div>
+    </div>
   </div>
 
   <!-- Import section -->
@@ -5106,7 +5114,7 @@ setInterval(()=>{if(drawerOpen)rAnnouncements();updateBanner();},30000);
 let attendees=[];
 let attFiltered=[];
 let cinMode=false;
-const ATT_GOAL=1000;
+const ATT_GOAL=2000;
 const ATT_MILESTONES=[250,500,750,1000];
 let prevAttCount=0;
 
@@ -5221,54 +5229,108 @@ function checkMilestones(){
 }
 
 // ── TREND CHART ──
+// ── TIMESLOT HEADCOUNT CHART (replaces trend chart) ──
 function renderTrendChart(){
-  const chart=document.getElementById('ATT-chart');
-  const labels=document.getElementById('ATT-chart-labels');
-  if(!chart||!labels)return;
-  // Build 30-day buckets
-  const now=new Date();
-  const days=[];
-  for(let i=29;i>=0;i--){
-    const d=new Date(now);d.setDate(d.getDate()-i);
-    days.push(d.toISOString().split('T')[0]);
-  }
-  const counts={};
-  days.forEach(d=>counts[d]=0);
-  attendees.forEach(a=>{if(a.order_date&&counts[a.order_date]!==undefined)counts[a.order_date]++;});
-  const vals=days.map(d=>counts[d]);
-  const max=Math.max(1,...vals);
-  chart.innerHTML=vals.map((v,i)=>`<div class="att-bar" style="height:${Math.round(v/max*100)}%" title="${days[i]}: ${v} registrations"></div>`).join('');
-  // Show only every 5th label
-  labels.innerHTML=days.map((d,i)=>`<div class="att-trend-lbl">${i%5===0?d.slice(5):''}</div>`).join('');
+  const chart = document.getElementById('ATT-chart');
+  const labels = document.getElementById('ATT-chart-labels');
+  if(!chart||!labels) return;
+
+  const slots = [
+    { key:'jun12am', label:'Jun 12\nMorning' },
+    { key:'jun12pm', label:'Jun 12\nAfternoon' },
+    { key:'jun13am', label:'Jun 13\nMorning' },
+    { key:'jun13pm', label:'Jun 13\nAfternoon' },
+  ];
+
+  const counts = slots.map(s => getSlotAttendees(s.key).length);
+  const max = Math.max(1, ...counts);
+  const colors = ['#3b82f6','#8b5cf6','#3b82f6','#8b5cf6'];
+
+  chart.innerHTML = counts.map((v,i) =>
+    `<div class="att-bar" style="height:${Math.round(v/max*100)}%;background:${colors[i]};border-radius:4px 4px 0 0;" title="${slots[i].label.replace('\n',' ')}: ${v} people"></div>`
+  ).join('');
+
+  labels.innerHTML = slots.map(s =>
+    `<div class="att-trend-lbl" style="font-size:10px;text-align:center;line-height:1.3;">${s.label.replace('\n','<br>')}</div>`
+  ).join('');
 }
 
-// ── GOAL PROGRESS ──
+// ── GOAL ──
+
 function renderGoal(){
-  const total=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
-  const checkedIn=attendees.filter(a=>a.status==='checked_in').length;
-  const pct=Math.min(100,Math.round(total/ATT_GOAL*100));
-  const el=id=>document.getElementById(id);
-  if(el('ATT-pct'))el('ATT-pct').textContent=pct+'%';
-  if(el('ATT-fill'))el('ATT-fill').style.width=pct+'%';
-  if(el('ATT-goal-sub'))el('ATT-goal-sub').textContent=`${total.toLocaleString()} registered · ${ATT_GOAL.toLocaleString()} goal${checkedIn?` · ${checkedIn} checked in`:''}`;
-  ATT_MILESTONES.forEach(ms=>{
+  const total = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
+  const unique = (() => {
+    const seen = new Set();
+    return attendees.filter(a => {
+      if(['cancelled','Cancelled','Not Attending'].includes(a.status)) return false;
+      const key = (a.email||a.id||'').toLowerCase();
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    }).length;
+  })();
+  const checkedIn = attendees.filter(a=>a.checked_in||a.status==='checked_in').length;
+  const pct = Math.min(100, Math.round(total/ATT_GOAL*100));
+  const el = id => document.getElementById(id);
+  if(el('ATT-pct')) el('ATT-pct').textContent = pct+'%';
+  if(el('ATT-fill')) el('ATT-fill').style.width = pct+'%';
+  if(el('ATT-goal-sub')) el('ATT-goal-sub').textContent =
+    `${total.toLocaleString()} tickets · ${unique.toLocaleString()} unique people · ${ATT_GOAL.toLocaleString()} goal${checkedIn?` · ${checkedIn} checked in`:''}`;
+  ATT_MILESTONES?.forEach(ms=>{
     const pill=el('ATT-ms'+ms);
-    if(pill){pill.className='att-ms'+(total>=ms?' reached':' pending');pill.textContent=(total>=ms?'✓ ':'')+(ms>=1000?'1,000':ms)+' 🎯';}
+    if(pill){pill.className='att-ms'+(total>=ms?' reached':' pending');pill.textContent=(total>=ms?'✓ ':'')+(ms>=1000?(ms/1000)+'K':ms)+' 🎯';}
   });
 }
 
 // ── STATS ──
 function renderAttStats(){
-  const total=attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status)).length;
-  const checkedIn=attendees.filter(a=>a.status==='checked_in').length;
-  const pct=Math.round(total/ATT_GOAL*100);
-  const el=document.getElementById('ATT-stats');
-  if(!el)return;
+  const activeAtts = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status));
+  const total = activeAtts.length;
+  const unique = (() => {
+    const seen = new Set();
+    return activeAtts.filter(a => {
+      const key=(a.email||a.id||'').toLowerCase();
+      if(seen.has(key))return false;
+      seen.add(key);return true;
+    }).length;
+  })();
+  const checkedIn = attendees.filter(a=>a.checked_in||a.status==='checked_in').length;
+  const pct = Math.min(Math.round(total/ATT_GOAL*100), 100);
+  const el = document.getElementById('ATT-stats');
+  if(!el) return;
   el.innerHTML=`
-    <div class="att-stat"><div class="att-stat-n">${total.toLocaleString()}</div><div class="att-stat-l">Registered</div></div>
-    <div class="att-stat green"><div class="att-stat-n">${pct}%</div><div class="att-stat-l">Of 1,000 goal</div></div>
-    <div class="att-stat amber"><div class="att-stat-n">${checkedIn}</div><div class="att-stat-l">Checked in</div></div>
-    <div class="att-stat blue"><div class="att-stat-n">${attendees.filter(a=>a.ticket_type&&a.ticket_type!=='General').length}</div><div class="att-stat-l">Non-general tickets</div></div>`;
+    <div class="att-stat"><div class="att-stat-n">${total.toLocaleString()}</div><div class="att-stat-l">Total tickets</div></div>
+    <div class="att-stat blue"><div class="att-stat-n">${unique.toLocaleString()}</div><div class="att-stat-l">Unique people</div></div>
+    <div class="att-stat green"><div class="att-stat-n">${pct}%</div><div class="att-stat-l">Of ${ATT_GOAL.toLocaleString()} goal</div></div>
+    <div class="att-stat amber"><div class="att-stat-n">${checkedIn}</div><div class="att-stat-l">Checked in</div></div>`;
+}
+
+// ── SPONSOR LEADERBOARD ──
+function renderSponsorLeaderboard(){
+  const el = document.getElementById('ATT-sponsor-board'); if(!el) return;
+  const counts = {};
+  attendees.forEach(a => {
+    if(!a.invited_by) return;
+    counts[a.invited_by] = (counts[a.invited_by]||0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){ el.innerHTML='<div style="color:var(--tm);font-size:13px;">No invite data yet — re-sync from Eventbrite</div>'; return; }
+  const max = sorted[0][1];
+  el.innerHTML = sorted.map(([name,count],i) => {
+    const pct = Math.round(count/max*100);
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;">
+          ${medal?`<span>${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:16px;text-align:center;">${i+1}</span>`}
+          ${esc(name)}
+        </div>
+        <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${count} ticket${count!==1?'s':''}</div>
+      </div>
+      <div style="height:6px;background:var(--grl);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${i===0?'var(--green2)':i===1?'var(--blue)':i===2?'var(--amber)':'var(--grb)'};border-radius:3px;transition:width .6s;"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── FILTER + RENDER ──
@@ -5291,19 +5353,25 @@ function setAttTab(slot) {
 function getSlotAttendees(slot) {
   const def = ATT_SLOTS[slot]; if(!def) return [];
   let list = attendees.filter(a => !['cancelled','Cancelled','refunded','Not Attending'].includes(a.status));
+
   if (def.tickets) {
+    // Include if: ticket exactly matches one of the slot tickets, OR ticket is BOTH Days
     list = list.filter(a => {
       const tc = a.ticket_class || a.ticket_type || '';
-      return def.tickets.some(t => tc === t || tc.toLowerCase().includes(t.split(' ')[0].toLowerCase()));
+      return def.tickets.some(t => tc === t);
     });
   }
-  // Always dedup by email within each slot
-  const seen = new Set();
-  list = list.filter(a => {
-    const key = (a.email||a.id||'').toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  });
+
+  if (def.dedup) {
+    // All Attendees tab: deduplicate by email for unique count
+    const seen = new Set();
+    list = list.filter(a => {
+      const key = (a.email||a.id||'').toLowerCase();
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+  }
+  // Timeslot tabs: no dedup — show true headcount including duplicates across days
   return list;
 }
 
@@ -5336,6 +5404,7 @@ function filterAttendees(){
 
 function rAttendees(){
   renderAttStats();renderGoal();renderTrendChart();
+  renderSponsorLeaderboard();
   updateTicketFilter(); updateTabBadges(); filterAttendees();
 }
 
