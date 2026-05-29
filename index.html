@@ -2549,13 +2549,30 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   </div>
 
   <!-- Toolbar -->
-  <div class="att-toolbar">
-    <input class="att-search" id="ATT-search" type="text" placeholder="Search name or email…" oninput="filterAttendees()">
+  <div class="att-toolbar" style="flex-wrap:wrap;gap:8px;">
+    <input class="att-search" id="ATT-search" type="text" placeholder="Search name or email…" oninput="filterAttendees()" style="min-width:200px;">
     <select class="att-filter-sel" id="ATT-filter-ticket" onchange="filterAttendees()"><option value="">All ticket types</option></select>
     <select class="att-filter-sel" id="ATT-filter-status" onchange="filterAttendees()">
       <option value="">All statuses</option>
       <option value="registered">Registered</option>
       <option value="checked_in">Checked in ✓</option>
+    </select>
+    <select class="att-filter-sel" id="ATT-filter-invite" onchange="filterAttendees()" style="min-width:200px;">
+      <option value="">Company invites — all</option>
+      <option value="__none__">— No answer provided —</option>
+      <option value="Regi Powell | PJ Morgan">Regi Powell | PJ Morgan</option>
+      <option value="Will Cummings | First Priority">Will Cummings | First Priority</option>
+      <option value="Merch Club">Merch Club</option>
+      <option value="Tom and Lindsey | Vis Major">Tom and Lindsey | Vis Major</option>
+      <option value="James Mackiewicz | Crestcom">James Mackiewicz | Crestcom</option>
+      <option value="Marty McGuire | Blackstone">Marty McGuire | Blackstone</option>
+      <option value="Matt Walch | Oracle">Matt Walch | Oracle</option>
+      <option value="Dean Peterson | Paylocity">Dean Peterson | Paylocity</option>
+      <option value="Rochelle Eigsti | Charter West">Rochelle Eigsti | Charter West</option>
+      <option value="50 Mile March Foundation">50 Mile March Foundation</option>
+      <option value="Blake Martin | FranNet">Blake Martin | FranNet</option>
+      <option value="Josh &amp; Brad | JB Acoustic">Josh &amp; Brad | JB Acoustic</option>
+      <option value="Hot Shops Arts Foundation">Hot Shops Arts Foundation</option>
     </select>
     <label class="att-checkin-toggle" id="ATT-cin-toggle" onclick="toggleCheckinMode()">
       <input type="checkbox" id="ATT-cin-cb" style="display:none"> Check-in mode
@@ -2567,7 +2584,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <table class="att-table" id="ATT-table">
       <thead><tr>
         <th>Name</th><th>Email</th><th>Ticket</th>
-        <th>Registered</th><th>Status</th><th style="width:100px;"></th>
+        <th>Invited by</th><th>Status</th><th style="width:100px;"></th>
       </tr></thead>
       <tbody id="ATT-tbody"></tbody>
     </table>
@@ -5386,6 +5403,7 @@ function filterAttendees(){
   const q=(document.getElementById('ATT-search')?.value||'').toLowerCase();
   const tk=document.getElementById('ATT-filter-ticket')?.value||'';
   const st=document.getElementById('ATT-filter-status')?.value||'';
+  const inv=document.getElementById('ATT-filter-invite')?.value||'';
   let base = getSlotAttendees(attCurrentSlot);
   attFiltered = base.filter(a=>{
     const name=`${a.first_name||''} ${a.last_name||''} ${a.email||''}`.toLowerCase();
@@ -5394,11 +5412,18 @@ function filterAttendees(){
     const ci=a.checked_in||a.status==='checked_in';
     if(st==='checked_in'&&!ci)return false;
     if(st==='registered'&&ci)return false;
+    // Company invite filter
+    if(inv==='__none__'&&a.invited_by)return false;
+    if(inv==='__none__'&&!a.invited_by)return true;
+    if(inv&&inv!=='__none__'&&(a.invited_by||'')!==inv)return false;
     return true;
   });
   renderAttTable(); renderAttCards();
   const lbl=document.getElementById('ATT-count-label');
-  if(lbl)lbl.textContent=`${attFiltered.length.toLocaleString()} ${ATT_SLOTS[attCurrentSlot]?.label||''}`;
+  if(lbl){
+    const invLabel = inv && inv!=='__none__' ? ` · ${inv}` : inv==='__none__'?' · No answer':'';
+    lbl.textContent=`${attFiltered.length.toLocaleString()} ${ATT_SLOTS[attCurrentSlot]?.label||''}${invLabel}`;
+  }
   updateTabBadges();
 }
 
@@ -5436,7 +5461,7 @@ function renderAttTable(){
       <td class="att-name-cell">${ci?`<span class="att-checked-in-name">${esc(name)}</span><span class="att-checked-in-badge">✓ In</span>`:esc(name)}</td>
       <td class="att-email-cell">${esc(a.email||'—')}</td>
       <td><span class="att-ticket-pill" style="font-size:11px;">${esc(ticket)}</span></td>
-      <td style="color:var(--tm);font-size:12px;">${a.created?new Date(a.created).toLocaleDateString('en-US',{month:'short',day:'numeric'}):a.order_date||'—'}</td>
+      <td style="color:var(--tm);font-size:12px;">${a.invited_by?`<span style="font-size:11px;background:var(--bl);color:var(--bt);padding:2px 7px;border-radius:20px;">${esc(a.invited_by)}</span>`:'—'}</td>
       <td><span class="att-status-pill sp-${ci?'checked_in':a.status||'registered'}">${ci?'Checked in ✓':(a.status||'registered').replace('_',' ')}</span></td>
       <td>${ci?`<button class="att-checkin-btn done" onclick="checkOut('${a.id}')">✓ In</button>`:`<button class="att-checkin-btn" onclick="checkIn('${a.id}')">Check in</button>`}</td>
     </tr>`;
