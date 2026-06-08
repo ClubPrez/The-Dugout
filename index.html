@@ -5582,7 +5582,7 @@ async function syncEventbrite(silent = false) {
   const btn = document.getElementById('ATT-sync-btn');
   if (!silent && btn) { btn.textContent = '⟳ Syncing…'; btn.disabled = true; }
   try {
-    const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/eventbrite-sync?mode=sync');
+    const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/eb-sync-v2');
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     // Reload from DB
