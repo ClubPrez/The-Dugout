@@ -2122,12 +2122,22 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     </div>
     <div style="display:grid;gap:10px;">
       <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Submitted by</label>
+        <input type="text" id="RCP-modal-submitter" placeholder="Your name" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+      </div>
+      <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Description</label>
         <input type="text" id="RCP-modal-desc" placeholder="What is this receipt for?" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
       </div>
       <div>
-        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Amount</label>
-        <input type="number" id="RCP-modal-amount" placeholder="0.00" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:14px;outline:none;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Amount owed
+          <span style="font-size:10px;font-weight:400;color:var(--tt);margin-left:4px;">— adjust if receipt includes non-event costs</span>
+        </label>
+        <div style="position:relative;">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:14px;">$</span>
+          <input type="number" id="RCP-modal-amount" placeholder="0.00" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px 9px 24px;font-family:var(--font);font-size:14px;outline:none;">
+        </div>
+        <div id="RCP-modal-receipt-total" style="font-size:11px;color:var(--tt);margin-top:4px;display:none;">Receipt total: <span id="RCP-modal-rt-val"></span> — adjust above if needed</div>
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Committee</label>
@@ -2139,6 +2149,10 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
           <option value="inv">Inventory</option>
           <option value="vol">Volunteers</option>
         </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Notes</label>
+        <textarea id="RCP-modal-notes" rows="3" placeholder="Any additional context — vendor info, what it covers, reimbursement details…" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;resize:vertical;"></textarea>
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);display:block;margin-bottom:5px;">Status</label>
@@ -7205,8 +7219,9 @@ function rRcpGrid() {
       </div>
       <div style="padding:10px 12px;">
         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description||'Receipt')}</div>
+        ${r.notes?`<div style="font-size:11px;color:var(--tm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.notes)}</div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-          <div style="font-size:12px;color:var(--tm);">${r.committee?.toUpperCase()||'—'}</div>
+          <div style="font-size:11px;color:var(--tm);">${esc(r.submitted_by||r.committee?.toUpperCase()||'—')}</div>
           <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;">${r.amount?fmt$(r.amount):'—'}</div>
         </div>
       </div>`;
@@ -7241,7 +7256,9 @@ async function uploadReceipts(files) {
         status: 'unpaid',
         description: '',
         amount: null,
+        receipt_total: null,
         committee: '',
+        submitted_by: presenceName || '',
         uploaded_by: presenceName || 'Committee',
       }).select().single();
 
@@ -7271,9 +7288,20 @@ function openRcpModal(r) {
   else document.getElementById('RCP-modal-pdf-link').href = r.file_url;
 
   document.getElementById('RCP-modal-title').textContent = r.file_name || 'Receipt';
+  document.getElementById('RCP-modal-submitter').value = r.submitted_by || presenceName || '';
   document.getElementById('RCP-modal-desc').value = r.description || '';
   document.getElementById('RCP-modal-amount').value = r.amount || '';
-  document.getElementById('RCP-modal-committee').value = r.committee || '';
+  document.getElementById('RCP-modal-notes').value = r.notes || '';
+
+  // Show receipt total hint if it differs from amount
+  const rtEl = document.getElementById('RCP-modal-receipt-total');
+  const rtVal = document.getElementById('RCP-modal-rt-val');
+  if (r.receipt_total && r.receipt_total !== r.amount) {
+    rtEl.style.display = 'block';
+    rtVal.textContent = '$' + Number(r.receipt_total).toFixed(2);
+  } else {
+    rtEl.style.display = 'none';
+  }
   setRcpStatus(rcpModalStatus);
   modal.style.display = 'flex';
 }
@@ -7299,7 +7327,9 @@ function setRcpStatus(s) {
 async function saveRcpModal() {
   if (!rcpModalId) return;
   const data = {
+    submitted_by: document.getElementById('RCP-modal-submitter').value.trim(),
     description: document.getElementById('RCP-modal-desc').value.trim(),
+    notes: document.getElementById('RCP-modal-notes').value.trim(),
     amount: parseFloat(document.getElementById('RCP-modal-amount').value) || null,
     committee: document.getElementById('RCP-modal-committee').value,
     status: rcpModalStatus,
