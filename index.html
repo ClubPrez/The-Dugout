@@ -7285,69 +7285,31 @@ async function autoParseAllReceipts() {
   const unparsed = simpleReceipts.filter(r => !r.amount);
   if (!unparsed.length) { toast('All receipts already have amounts', '', ''); return; }
   const btn = document.getElementById('RCP-parse-btn');
-  if (btn) { btn.textContent = `✨ Parsing 0/${unparsed.length}…`; btn.disabled = true; }
+  const imgExts = ['jpg','jpeg','png','gif','webp','bmp'];
+  const images = unparsed.filter(r => imgExts.includes((r.file_url||'').split('?')[0].split('.').pop()?.toLowerCase()||''));
+  const pdfsCount = unparsed.length - images.length;
+  if (!images.length) { toast('No images to parse', `${pdfsCount} PDF receipt${pdfsCount!==1?'s':''} need manual entry`, 'warn'); return; }
+  if (btn) { btn.textContent = `✨ Parsing 0/${images.length}…`; btn.disabled = true; }
   let parsed = 0;
 
-  for (const r of unparsed) {
-    // Detect image from URL extension since blob.type is unreliable from Supabase
-    const ext = (r.file_url || '').split('?')[0].split('.').pop().toLowerCase();
-    const imgExts = ['jpg','jpeg','png','gif','webp','bmp','tiff'];
-    const isImg = imgExts.includes(ext);
-    if (!isImg) continue; // skip PDFs — can't parse visually
-
+  for (const r of images) {
     try {
-      // Fetch with timeout
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
-      const imgResp = await fetch(r.file_url, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      if (!imgResp.ok) throw new Error(`Fetch failed: ${imgResp.status}`);
-      const blob = await imgResp.blob();
-
-      // Derive media type from extension, not blob.type
-      const mediaTypeMap = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', bmp:'image/bmp' };
-      const mediaType = mediaTypeMap[ext] || 'image/jpeg';
-
-      const b64 = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result.split(',')[1]);
-        reader.onerror = () => rej(new Error('FileReader failed'));
-        reader.readAsDataURL(blob);
-      });
-
-      const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting', {
+      if (btn) btn.textContent = `✨ Parsing ${parsed+1}/${images.length}…`;
+      const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/parse-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
-              { type: 'text', text: 'This is a receipt image. Find the grand total or total amount due. Return ONLY the number, like 42.50 — no dollar sign, no other text. If you cannot find a total, return 0.' }
-            ]
-          }],
-          model: 'claude-sonnet-4-5',
-          max_tokens: 20
-        })
+        body: JSON.stringify({ file_url: r.file_url })
       });
-
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
-
-      // Check for API errors
       if (data.error) throw new Error(data.error);
-      if (!data.content) throw new Error('No response from AI');
-
-      const txt = data.content.map(c => c.text || '').join('').trim().replace(/[^0-9.]/g, '');
-      const amount = parseFloat(txt);
-
+      const amount = Number(data.amount);
       if (amount > 0) {
         const { error: dbErr } = await sb.from('simple_receipts').update({ amount }).eq('id', r.id);
         if (dbErr) throw new Error(dbErr.message);
         const idx = simpleReceipts.findIndex(x => x.id === r.id);
         if (idx !== -1) simpleReceipts[idx].amount = amount;
         parsed++;
-        if (btn) btn.textContent = `✨ Parsed ${parsed}/${unparsed.length}…`;
       }
     } catch(e) {
       console.warn('Parse failed for', r.file_name, ':', e.message);
@@ -7356,11 +7318,8 @@ async function autoParseAllReceipts() {
 
   if (btn) { btn.textContent = '✨ Auto-parse totals'; btn.disabled = false; }
   rReceipts();
-  if (parsed > 0) {
-    toast('Parsing complete', `${parsed} of ${unparsed.length} receipts auto-filled`, '');
-  } else {
-    toast('No totals found', 'Try opening each receipt and entering the amount manually', 'warn');
-  }
+  const msg = pdfsCount > 0 ? `${parsed} parsed · ${pdfsCount} PDF${pdfsCount!==1?'s':''} need manual entry` : `${parsed} of ${images.length} receipts auto-filled`;
+  toast(parsed > 0 ? 'Parsing complete' : 'No totals found', msg, parsed > 0 ? '' : 'warn');
 }
 
 // ── PER-PERSON RECEIPT CHART ──
