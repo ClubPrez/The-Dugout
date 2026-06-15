@@ -1643,6 +1643,20 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 .att-ts-card-time{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;}
 .att-ts-card-count{font-family:var(--font-condensed);font-size:32px;font-weight:700;color:var(--navy);}
 .att-ts-card-sub{font-size:11px;color:var(--tm);margin-top:2px;}
+
+/* Medal bars */
+.lb-bar-gold{background:linear-gradient(90deg,#f5c842,#d4a017,#f5c842);}
+.lb-bar-silver{background:linear-gradient(90deg,#c0c0c0,#a8a8a8,#c0c0c0);}
+.lb-bar-bronze{background:linear-gradient(90deg,#cd7f32,#a0522d,#cd7f32);}
+.lb-bar-default{background:var(--grb);}
+/* Accordion */
+.att-accordion{border:1px solid var(--grb);border-radius:10px;overflow:hidden;margin-bottom:16px;background:white;}
+.att-accordion-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:600;color:var(--tm);user-select:none;transition:background .15s;}
+.att-accordion-head:hover{background:var(--grl);}
+.att-accordion-icon{font-size:16px;transition:transform .2s;line-height:1;}
+.att-accordion-icon.open{transform:rotate(45deg);}
+.att-accordion-body{padding:16px;border-top:1px solid var(--grb);display:none;}
+.att-accordion-body.open{display:block;}
 </style>
 </head>
 <body>
@@ -2497,13 +2511,20 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     </div>
   </div>
 
-  <!-- Timeslot chart + Sponsor leaderboards side by side -->
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;align-items:start;">
-    <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">Expected headcount by timeslot</div>
+  <!-- Accordion: headcount chart -->
+  <div class="att-accordion" style="margin-bottom:14px;">
+    <div class="att-accordion-head" onclick="toggleAttAccordion(this)">
+      <span>📊 Expected headcount by timeslot</span>
+      <span class="att-accordion-icon">+</span>
+    </div>
+    <div class="att-accordion-body">
       <div class="att-trend-chart" id="ATT-chart" style="height:100px;display:flex;align-items:flex-end;gap:8px;"></div>
       <div class="att-trend-labels" id="ATT-chart-labels" style="display:flex;gap:8px;margin-top:6px;"></div>
     </div>
+  </div>
+
+  <!-- 2-col leaderboards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;align-items:start;">
     <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">🎟 Who drove registrations</div>
       <div id="ATT-sponsor-board"></div>
@@ -5381,6 +5402,14 @@ function renderCIStats(){
     </div>`;
 }
 
+function toggleAttAccordion(head) {
+  const icon = head.querySelector('.att-accordion-icon');
+  const body = head.nextElementSibling;
+  const open = body.classList.toggle('open');
+  icon.classList.toggle('open', open);
+  if(open) renderTrendChart();
+}
+
 function renderAttStats(){
   const activeAtts = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status));
   const total = activeAtts.length;
@@ -5412,21 +5441,22 @@ function renderSponsorLeaderboard(){
     counts[a.invited_by] = (counts[a.invited_by]||0) + 1;
   });
   const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(!sorted.length){ el.innerHTML='<div style="color:var(--tm);font-size:13px;">No invite data yet — re-sync from Eventbrite</div>'; return; }
+  if(!sorted.length){ el.innerHTML='<div style="color:var(--tm);font-size:13px;">No invite data yet</div>'; return; }
   const max = sorted[0][1];
   el.innerHTML = sorted.map(([name,count],i) => {
     const pct = Math.round(count/max*100);
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const barClass = i===0?'lb-bar-gold':i===1?'lb-bar-silver':i===2?'lb-bar-bronze':'lb-bar-default';
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;">
-          ${medal?`<span>${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:16px;text-align:center;">${i+1}</span>`}
-          ${esc(name)}
+        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
+          ${medal?`<span style="flex-shrink:0;">${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:18px;flex-shrink:0;text-align:center;">${i+1}</span>`}
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
         </div>
-        <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${count} ticket${count!==1?'s':''}</div>
+        <span style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);flex-shrink:0;margin-left:8px;">${count}</span>
       </div>
       <div style="height:6px;background:var(--grl);border-radius:3px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${i===0?'var(--green2)':i===1?'var(--blue)':i===2?'var(--amber)':'var(--grb)'};border-radius:3px;transition:width .6s;"></div>
+        <div class="${barClass}" style="height:100%;width:${pct}%;border-radius:3px;transition:width .6s;"></div>
       </div>
     </div>`;
   }).join('');
@@ -5441,28 +5471,28 @@ function renderCheckinLeaderboard(){
     .forEach(a => { counts[a.invited_by] = (counts[a.invited_by]||0) + 1; });
   const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   if(!sorted.length){ el.innerHTML='<div style="color:var(--tm);font-size:13px;">No check-in data yet</div>'; return; }
-  // Build reg counts for conversion rate
   const regCounts = {};
   attendees.filter(a=>a.invited_by).forEach(a=>{ regCounts[a.invited_by]=(regCounts[a.invited_by]||0)+1; });
   const max = sorted[0][1];
   el.innerHTML = sorted.map(([name,count],i) => {
     const pct = Math.round(count/max*100);
     const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const barClass = i===0?'lb-bar-gold':i===1?'lb-bar-silver':i===2?'lb-bar-bronze':'lb-bar-default';
     const reg = regCounts[name]||0;
     const rate = reg>0 ? Math.round(count/reg*100) : 0;
     return `<div style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;">
-          ${medal?`<span>${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:16px;text-align:center;">${i+1}</span>`}
-          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${esc(name)}">${esc(name)}</span>
+        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;flex:1;min-width:0;">
+          ${medal?`<span style="flex-shrink:0;">${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:18px;flex-shrink:0;text-align:center;">${i+1}</span>`}
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(name)}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <span style="font-size:10px;color:var(--tt);background:var(--grl);padding:1px 5px;border-radius:10px;">${rate}%</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px;">
+          <span style="font-size:10px;color:var(--tt);background:var(--grl);padding:1px 6px;border-radius:10px;">${rate}%</span>
           <span style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${count}</span>
         </div>
       </div>
       <div style="height:6px;background:var(--grl);border-radius:3px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:${i===0?'#16a34a':i===1?'#2563eb':i===2?'#7c3aed':'#6b7280'};border-radius:3px;transition:width .6s;"></div>
+        <div class="${barClass}" style="height:100%;width:${pct}%;border-radius:3px;transition:width .6s;"></div>
       </div>
     </div>`;
   }).join('');
