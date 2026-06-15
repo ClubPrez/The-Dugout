@@ -2497,16 +2497,20 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     </div>
   </div>
 
-  <!-- Timeslot chart + Sponsor leaderboard -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;align-items:start;">
+  <!-- Timeslot chart + Sponsor leaderboards side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;align-items:start;">
     <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">Expected headcount by timeslot</div>
       <div class="att-trend-chart" id="ATT-chart" style="height:100px;display:flex;align-items:flex-end;gap:8px;"></div>
       <div class="att-trend-labels" id="ATT-chart-labels" style="display:flex;gap:8px;margin-top:6px;"></div>
     </div>
     <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">Who's driving registrations</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">🎟 Who drove registrations</div>
       <div id="ATT-sponsor-board"></div>
+    </div>
+    <div style="background:var(--glass-bg);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:var(--r);padding:16px;box-shadow:var(--glass-shadow);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tt);margin-bottom:12px;">✅ Who drove check-ins</div>
+      <div id="ATT-checkin-board"></div>
     </div>
   </div>
 
@@ -5428,6 +5432,42 @@ function renderSponsorLeaderboard(){
   }).join('');
 }
 
+// ── CHECK-IN LEADERBOARD ──
+function renderCheckinLeaderboard(){
+  const el = document.getElementById('ATT-checkin-board'); if(!el) return;
+  const counts = {};
+  attendees
+    .filter(a => (a.checked_in || a.status==='checked_in') && a.invited_by)
+    .forEach(a => { counts[a.invited_by] = (counts[a.invited_by]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){ el.innerHTML='<div style="color:var(--tm);font-size:13px;">No check-in data yet</div>'; return; }
+  // Build reg counts for conversion rate
+  const regCounts = {};
+  attendees.filter(a=>a.invited_by).forEach(a=>{ regCounts[a.invited_by]=(regCounts[a.invited_by]||0)+1; });
+  const max = sorted[0][1];
+  el.innerHTML = sorted.map(([name,count],i) => {
+    const pct = Math.round(count/max*100);
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const reg = regCounts[name]||0;
+    const rate = reg>0 ? Math.round(count/reg*100) : 0;
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:${i<3?'700':'500'};display:flex;align-items:center;gap:5px;">
+          ${medal?`<span>${medal}</span>`:`<span style="font-size:11px;color:var(--tt);width:16px;text-align:center;">${i+1}</span>`}
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;" title="${esc(name)}">${esc(name)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <span style="font-size:10px;color:var(--tt);background:var(--grl);padding:1px 5px;border-radius:10px;">${rate}%</span>
+          <span style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${count}</span>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--grl);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${i===0?'#16a34a':i===1?'#2563eb':i===2?'#7c3aed':'#6b7280'};border-radius:3px;transition:width .6s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── FILTER + RENDER ──
 // ── TIMESLOT TABS ──
 const ATT_SLOTS = {
@@ -5528,7 +5568,7 @@ function filterAttendees(){
 
 function rAttendees(){
   renderAttStats(); renderCIStats(); renderGoal(); renderTrendChart();
-  renderSponsorLeaderboard();
+  renderSponsorLeaderboard(); renderCheckinLeaderboard();
   updateTicketFilter(); updateTabBadges(); filterAttendees();
 }
 
