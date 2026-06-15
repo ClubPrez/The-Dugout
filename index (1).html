@@ -2121,11 +2121,11 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 </div>
 
 <!-- Receipt detail modal -->
-<div id="RCP-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:800;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target.id==='RCP-modal')closeRcpModal()">
+<div id="RCP-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:800;align-items:center;justify-content:center;padding:20px;" onclick="">
   <div style="background:white;border-radius:16px;padding:24px;width:min(480px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.25);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;" id="RCP-modal-title">Receipt</div>
-      <button onclick="closeRcpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tm);">✕</button>
+      <button onclick="closeRcpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tm);" title="Close without saving">✕</button>
     </div>
     <img id="RCP-modal-img" src="" style="width:100%;border-radius:8px;margin-bottom:14px;display:none;">
     <div id="RCP-modal-pdf" style="display:none;margin-bottom:14px;">
@@ -2149,7 +2149,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
         </label>
         <div style="position:relative;">
           <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:14px;">$</span>
-          <input type="number" id="RCP-modal-amount" placeholder="0.00" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px 9px 24px;font-family:var(--font);font-size:14px;outline:none;">
+          <input type="number" id="RCP-modal-amount" placeholder="Enter amount" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px 9px 24px;font-family:var(--font);font-size:14px;outline:none;">
         </div>
         <div id="RCP-modal-receipt-total" style="font-size:11px;color:var(--tt);margin-top:4px;display:none;">Receipt total: <span id="RCP-modal-rt-val"></span> — adjust above if needed</div>
       </div>
@@ -2177,8 +2177,8 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeRcpModal()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="saveRcpModal()">Save</button>
+      <button class="btn btn-secondary" style="flex:0 0 auto;padding:10px 16px;font-size:13px;" onclick="closeRcpModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;font-size:15px;font-weight:700;" onclick="saveRcpModal()">Save receipt →</button>
       <button onclick="deleteRcp()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--rl);background:var(--rl);color:var(--rt);cursor:pointer;font-family:var(--font);font-size:13px;">Delete</button>
     </div>
   </div>
@@ -7495,6 +7495,7 @@ function setRcpStatus(s) {
 
 async function saveRcpModal() {
   if (!rcpModalId) return;
+  const id = rcpModalId; // capture before close nulls it
   const data = {
     submitted_by: document.getElementById('RCP-modal-submitter').value.trim(),
     description: document.getElementById('RCP-modal-desc').value.trim(),
@@ -7503,11 +7504,12 @@ async function saveRcpModal() {
     committee: document.getElementById('RCP-modal-committee').value,
     status: rcpModalStatus,
   };
+  const idx = simpleReceipts.findIndex(r => r.id === id);
+  if (idx !== -1) simpleReceipts[idx] = { ...simpleReceipts[idx], ...data };
   closeRcpModal();
-  const idx = simpleReceipts.findIndex(r => r.id === rcpModalId);
-  if (idx !== -1) { simpleReceipts[idx] = { ...simpleReceipts[idx], ...data }; rReceipts(); }
-  await sb.from('simple_receipts').update(data).eq('id', rcpModalId);
-  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || '', '');
+  rReceipts();
+  await sb.from('simple_receipts').update(data).eq('id', id);
+  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || data.submitted_by || 'Receipt', '');
 }
 
 async function deleteRcp() {
