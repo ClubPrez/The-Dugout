@@ -7285,44 +7285,82 @@ async function autoParseAllReceipts() {
   const unparsed = simpleReceipts.filter(r => !r.amount);
   if (!unparsed.length) { toast('All receipts already have amounts', '', ''); return; }
   const btn = document.getElementById('RCP-parse-btn');
-  if (btn) { btn.textContent = `✨ Parsing ${unparsed.length}…`; btn.disabled = true; }
+  if (btn) { btn.textContent = `✨ Parsing 0/${unparsed.length}…`; btn.disabled = true; }
   let parsed = 0;
+
   for (const r of unparsed) {
-    const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp|PNG|JPG|JPEG)/i);
-    if (!isImg) continue;
+    // Detect image from URL extension since blob.type is unreliable from Supabase
+    const ext = (r.file_url || '').split('?')[0].split('.').pop().toLowerCase();
+    const imgExts = ['jpg','jpeg','png','gif','webp','bmp','tiff'];
+    const isImg = imgExts.includes(ext);
+    if (!isImg) continue; // skip PDFs — can't parse visually
+
     try {
-      const imgResp = await fetch(r.file_url);
+      // Fetch with timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const imgResp = await fetch(r.file_url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!imgResp.ok) throw new Error(`Fetch failed: ${imgResp.status}`);
       const blob = await imgResp.blob();
-      const b64 = await new Promise(res => {
+
+      // Derive media type from extension, not blob.type
+      const mediaTypeMap = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', bmp:'image/bmp' };
+      const mediaType = mediaTypeMap[ext] || 'image/jpeg';
+
+      const b64 = await new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = () => rej(new Error('FileReader failed'));
         reader.readAsDataURL(blob);
       });
-      const messages = [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: blob.type || 'image/jpeg', data: b64 } },
-          { type: 'text', text: 'Look at this receipt. Return ONLY the grand total as a number like 42.50 — no dollar sign, no words. If no total found, return 0.' }
-        ]
-      }];
+
       const resp = await fetch('https://lcqevefzbotmxtjbpgvl.supabase.co/functions/v1/analyze-meeting', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages, model: 'claude-sonnet-4-5', max_tokens: 20 })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } },
+              { type: 'text', text: 'This is a receipt image. Find the grand total or total amount due. Return ONLY the number, like 42.50 — no dollar sign, no other text. If you cannot find a total, return 0.' }
+            ]
+          }],
+          model: 'claude-sonnet-4-5',
+          max_tokens: 20
+        })
       });
+
       const data = await resp.json();
-      const amount = parseFloat(data.content?.map(c=>c.text||'').join('').trim());
+
+      // Check for API errors
+      if (data.error) throw new Error(data.error);
+      if (!data.content) throw new Error('No response from AI');
+
+      const txt = data.content.map(c => c.text || '').join('').trim().replace(/[^0-9.]/g, '');
+      const amount = parseFloat(txt);
+
       if (amount > 0) {
-        await sb.from('simple_receipts').update({ amount }).eq('id', r.id);
+        const { error: dbErr } = await sb.from('simple_receipts').update({ amount }).eq('id', r.id);
+        if (dbErr) throw new Error(dbErr.message);
         const idx = simpleReceipts.findIndex(x => x.id === r.id);
         if (idx !== -1) simpleReceipts[idx].amount = amount;
         parsed++;
         if (btn) btn.textContent = `✨ Parsed ${parsed}/${unparsed.length}…`;
       }
-    } catch(e) { console.warn('Parse failed:', r.file_name, e); }
+    } catch(e) {
+      console.warn('Parse failed for', r.file_name, ':', e.message);
+    }
   }
+
   if (btn) { btn.textContent = '✨ Auto-parse totals'; btn.disabled = false; }
   rReceipts();
-  toast('Done', `${parsed} receipt${parsed!==1?'s':''} parsed automatically`, '');
+  if (parsed > 0) {
+    toast('Parsing complete', `${parsed} of ${unparsed.length} receipts auto-filled`, '');
+  } else {
+    toast('No totals found', 'Try opening each receipt and entering the amount manually', 'warn');
+  }
 }
 
 // ── PER-PERSON RECEIPT CHART ──
@@ -7332,37 +7370,37 @@ function renderPersonChart() {
   if (!chart || !bars) return;
   const people = {};
   simpleReceipts.forEach(r => {
-    const name = r.submitted_by || 'Unknown';
+    const name = (r.submitted_by || 'Unknown').trim() || 'Unknown';
     if (!people[name]) people[name] = { count:0, total:0, paid:0, unpaid:0 };
     people[name].count++;
-    const amt = Number(r.amount||0);
+    const amt = Number(r.amount || 0);
     people[name].total += amt;
-    if (r.status==='paid') people[name].paid += amt;
+    if (r.status === 'paid') people[name].paid += amt;
     else people[name].unpaid += amt;
   });
   const sorted = Object.entries(people).sort((a,b) => b[1].total - a[1].total || b[1].count - a[1].count);
-  if (!sorted.length) { chart.style.display='none'; return; }
+  if (!sorted.length) { chart.style.display = 'none'; return; }
   chart.style.display = 'block';
   const hasAmounts = simpleReceipts.some(r => r.amount);
-  const maxVal = hasAmounts ? Math.max(1, ...sorted.map(([,d])=>d.total)) : Math.max(1,...sorted.map(([,d])=>d.count));
-  const maxCount = Math.max(1, ...sorted.map(([,d])=>d.count));
+  const maxVal = Math.max(1, ...sorted.map(([,d]) => hasAmounts ? d.total : d.count));
   bars.innerHTML = sorted.map(([name, d]) => `
     <div style="margin-bottom:12px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;gap:8px;">
         <div style="font-size:13px;font-weight:600;flex:1;">${esc(name)}</div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:12px;">
           <span style="color:var(--tm);">${d.count} receipt${d.count!==1?'s':''}</span>
-          ${hasAmounts?`<span style="color:var(--gt);font-weight:600;">${fmt$(d.paid)} paid</span>
-          <span style="color:var(--rt);font-weight:600;">${fmt$(d.unpaid)} unpaid</span>
-          <span style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${fmt$(d.total)}</span>`
-          :`<span style="color:var(--tt);font-size:11px;">enter amounts to see totals</span>`}
+          ${hasAmounts
+            ? `<span style="color:var(--gt);font-weight:600;">${fmt$(d.paid)} paid</span>
+               <span style="color:var(--rt);font-weight:600;">${fmt$(d.unpaid)} unpaid</span>
+               <span style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:var(--navy);">${fmt$(d.total)}</span>`
+            : `<span style="color:var(--tt);font-size:11px;">no amounts yet</span>`}
         </div>
       </div>
       <div style="height:8px;background:var(--grl);border-radius:4px;overflow:hidden;display:flex;">
-        ${hasAmounts?`
-          <div style="height:100%;width:${Math.round(d.paid/maxVal*100)}%;background:var(--green2);transition:width .5s;"></div>
-          <div style="height:100%;width:${Math.round(d.unpaid/maxVal*100)}%;background:var(--red);transition:width .5s;"></div>
-        `:`<div style="height:100%;width:${Math.round(d.count/maxCount*100)}%;background:var(--blue);transition:width .5s;"></div>`}
+        ${hasAmounts
+          ? `<div style="height:100%;width:${Math.round(d.paid/maxVal*100)}%;background:var(--green2);transition:width .5s;"></div>
+             <div style="height:100%;width:${Math.round(d.unpaid/maxVal*100)}%;background:var(--red);transition:width .5s;"></div>`
+          : `<div style="height:100%;width:${Math.round(d.count/maxVal*100)}%;background:var(--blue);transition:width .5s;"></div>`}
       </div>
     </div>`).join('');
 }
@@ -7370,11 +7408,10 @@ function renderPersonChart() {
 let rcpFilter = 'all';
 let rcpModalId = null;
 let rcpModalStatus = 'unpaid';
-let simpleReceipts = []; // loaded from supabase storage + receipts table
+let simpleReceipts = [];
 
 async function loadSimpleReceipts() {
-  const { data } = await sb.from('simple_receipts')
-    .select('*').order('created_at', { ascending: false });
+  const { data } = await sb.from('simple_receipts').select('*').order('created_at', { ascending: false });
   if (data) { simpleReceipts = data; rReceipts(); }
 }
 
@@ -7392,22 +7429,19 @@ function rRcpSummary() {
   const totalPaid = paid.reduce((s, r) => s + Number(r.amount || 0), 0);
   const totalUnpaid = unpaid.reduce((s, r) => s + Number(r.amount || 0), 0);
   const hasAmounts = all.some(r => r.amount);
-
-  // Detect duplicates — same file_name OR same file_size
   const dupIds = getRcpDuplicateIds();
-
   el.innerHTML = `
     <div style="background:var(--gl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--gt);">${hasAmounts?fmt$(totalPaid):paid.length}</div>
-      <div style="font-size:11px;color:var(--gt);text-transform:uppercase;letter-spacing:.06em;">Paid${hasAmounts?' total':' receipts'}</div>
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--gt);">${hasAmounts ? fmt$(totalPaid) : paid.length}</div>
+      <div style="font-size:11px;color:var(--gt);text-transform:uppercase;letter-spacing:.06em;">Paid${hasAmounts ? ' total' : ' receipts'}</div>
     </div>
     <div style="background:var(--rl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--rt);">${hasAmounts?fmt$(totalUnpaid):unpaid.length}</div>
-      <div style="font-size:11px;color:var(--rt);text-transform:uppercase;letter-spacing:.06em;">Unpaid${hasAmounts?' total':' receipts'}</div>
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--rt);">${hasAmounts ? fmt$(totalUnpaid) : unpaid.length}</div>
+      <div style="font-size:11px;color:var(--rt);text-transform:uppercase;letter-spacing:.06em;">Unpaid${hasAmounts ? ' total' : ' receipts'}</div>
     </div>
     <div style="background:var(--bl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--bt);">${hasAmounts?fmt$(totalPaid+totalUnpaid):all.length}</div>
-      <div style="font-size:11px;color:var(--bt);text-transform:uppercase;letter-spacing:.06em;">${hasAmounts?'Total amount':'Total receipts'}</div>
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--bt);">${hasAmounts ? fmt$(totalPaid + totalUnpaid) : all.length}</div>
+      <div style="font-size:11px;color:var(--bt);text-transform:uppercase;letter-spacing:.06em;">${hasAmounts ? 'Total amount' : 'Total receipts'}</div>
     </div>
     ${dupIds.size > 0 ? `<div style="background:#fff7ed;border:1px solid #f97316;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
       <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:#c2410c;">${dupIds.size}</div>
@@ -7420,19 +7454,16 @@ function getRcpDuplicateIds() {
   const nameMap = {};
   const sizeMap = {};
   simpleReceipts.forEach(r => {
-    // Group by file name (excluding timestamp prefix)
-    const baseName = r.file_name || '';
+    const baseName = (r.file_name || '').trim();
     if (baseName) {
-      if (!nameMap[baseName]) nameMap[baseName] = [];
+      nameMap[baseName] = nameMap[baseName] || [];
       nameMap[baseName].push(r.id);
     }
-    // Group by file size (only flag if size > 10KB to avoid false positives on tiny files)
     if (r.file_size && r.file_size > 10000) {
-      if (!sizeMap[r.file_size]) sizeMap[r.file_size] = [];
+      sizeMap[r.file_size] = sizeMap[r.file_size] || [];
       sizeMap[r.file_size].push(r.id);
     }
   });
-  // Mark all IDs that share a name or size with another receipt
   Object.values(nameMap).forEach(ids => { if (ids.length > 1) ids.forEach(id => dupIds.add(id)); });
   Object.values(sizeMap).forEach(ids => { if (ids.length > 1) ids.forEach(id => dupIds.add(id)); });
   return dupIds;
@@ -7440,53 +7471,50 @@ function getRcpDuplicateIds() {
 
 function filterRcp(f) {
   rcpFilter = f;
-  document.querySelectorAll('[data-f]').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  // Use specific selector to avoid matching other data-f elements on the page
+  document.querySelectorAll('#panel-receipts [data-f]').forEach(b => b.classList.toggle('active', b.dataset.f === f));
   rRcpGrid();
 }
 
 function rRcpGrid() {
   const grid = document.getElementById('RCP-grid'); if (!grid) return;
-  const filtered = rcpFilter === 'all' ? simpleReceipts
-    : simpleReceipts.filter(r => r.status === rcpFilter);
+  const filtered = rcpFilter === 'all' ? simpleReceipts : simpleReceipts.filter(r => r.status === rcpFilter);
 
   if (!filtered.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tm);">
       <div style="font-size:36px;margin-bottom:10px;">🧾</div>
-      <div style="font-size:15px;font-weight:500;">${rcpFilter==='all'?'No receipts yet':'No '+rcpFilter+' receipts'}</div>
+      <div style="font-size:15px;font-weight:500;">${rcpFilter === 'all' ? 'No receipts yet' : 'No ' + rcpFilter + ' receipts'}</div>
       <div style="font-size:13px;margin-top:6px;">Click "Upload receipt" or drop images above</div>
     </div>`;
     return;
   }
 
   const dupIds = getRcpDuplicateIds();
-
   grid.innerHTML = '';
   filtered.forEach(r => {
     const isPaid = r.status === 'paid';
     const isDup = dupIds.has(r.id);
-    const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
+    const ext = (r.file_url || '').split('?')[0].split('.').pop().toLowerCase();
+    const isImg = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
     const card = document.createElement('div');
-
-    // Border: orange for duplicate, green for paid, red for unpaid
     const borderColor = isDup ? '#f97316' : isPaid ? 'var(--green2)' : 'var(--red)';
     const bgColor = isDup ? '#fff7ed' : 'white';
-
     card.style.cssText = `background:${bgColor};border:2px solid ${borderColor};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;`;
     card.onmouseover = () => card.style.transform = 'translateY(-2px)';
     card.onmouseout = () => card.style.transform = '';
     card.onclick = () => openRcpModal(r);
     card.innerHTML = `
       <div style="height:140px;background:var(--grl);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
-        ${isImg ? `<img src="${esc(r.file_url)}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:48px;">📄</span>`}
-        <div style="position:absolute;top:8px;right:8px;background:${isPaid?'var(--green2)':'var(--red)'};color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">${isPaid?'PAID':'UNPAID'}</div>
+        ${isImg ? `<img src="${esc(r.file_url)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : `<span style="font-size:48px;">📄</span>`}
+        <div style="position:absolute;top:8px;right:8px;background:${isPaid ? 'var(--green2)' : 'var(--red)'};color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">${isPaid ? 'PAID' : 'UNPAID'}</div>
         ${isDup ? `<div style="position:absolute;top:8px;left:8px;background:#f97316;color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">⚠ DUPLICATE?</div>` : ''}
       </div>
       <div style="padding:10px 12px;">
-        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description||r.file_name||'Receipt')}</div>
-        ${r.notes?`<div style="font-size:11px;color:var(--tm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.notes)}</div>`:''}
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description || r.file_name || 'Receipt')}</div>
+        ${r.notes ? `<div style="font-size:11px;color:var(--tm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.notes)}</div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-          <div style="font-size:11px;color:var(--tm);">${esc(r.submitted_by||r.committee?.toUpperCase()||'—')}</div>
-          <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:${r.amount?'var(--text)':'var(--tt)'};">${r.amount?fmt$(r.amount):'No amount'}</div>
+          <div style="font-size:11px;color:var(--tm);">${esc(r.submitted_by || r.committee?.toUpperCase() || '—')}</div>
+          <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:${r.amount ? 'var(--text)' : 'var(--tt)'};">${r.amount ? fmt$(r.amount) : 'No amount'}</div>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -7498,20 +7526,23 @@ async function uploadReceipts(files) {
   const prog = document.getElementById('RCP-progress');
   const progName = document.getElementById('RCP-progress-name');
   const progFill = document.getElementById('RCP-progress-fill');
+  const fileArr = Array.from(files);
+  let firstRec = null;
 
-  for (const file of Array.from(files)) {
-    prog.style.display = 'block';
-    progName.textContent = `Uploading ${file.name}…`;
-    progFill.style.width = '20%';
+  for (let i = 0; i < fileArr.length; i++) {
+    const file = fileArr[i];
+    if (prog) prog.style.display = 'block';
+    if (progName) progName.textContent = `Uploading ${file.name}${fileArr.length > 1 ? ` (${i+1}/${fileArr.length})` : ''}…`;
+    if (progFill) progFill.style.width = '20%';
 
     try {
-      const path = `receipts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-      const { error: upErr } = await sb.storage.from('leadoff-assets').upload(path, file, { cacheControl:'3600', upsert:false });
-      if (upErr) throw upErr;
-      progFill.style.width = '70%';
+      const path = `receipts/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const { error: upErr } = await sb.storage.from('leadoff-assets').upload(path, file, { cacheControl: '3600', upsert: false });
+      if (upErr) throw new Error(upErr.message);
+      if (progFill) progFill.style.width = '70%';
 
       const { data: urlData } = sb.storage.from('leadoff-assets').getPublicUrl(path);
-      const { data: rec } = await sb.from('simple_receipts').insert({
+      const { data: rec, error: insErr } = await sb.from('simple_receipts').insert({
         file_url: urlData.publicUrl,
         storage_path: path,
         file_name: file.name,
@@ -7524,54 +7555,80 @@ async function uploadReceipts(files) {
         committee: '',
         submitted_by: presenceName || '',
         uploaded_by: presenceName || 'Committee',
+        notes: '',
       }).select().single();
 
-      progFill.style.width = '100%';
-      if (rec) { simpleReceipts.unshift(rec); rReceipts(); }
-      // Auto-open modal for the new receipt
-      if (rec) openRcpModal(rec);
+      if (insErr) throw new Error(insErr.message);
+      if (progFill) progFill.style.width = '100%';
+
+      if (rec) {
+        simpleReceipts.unshift(rec);
+        if (!firstRec) firstRec = rec; // only open modal for first file
+      }
     } catch(e) {
-      toast('Upload failed', e.message || 'Try again', 'err');
+      toast('Upload failed', `${file.name}: ${e.message || 'Try again'}`, 'err');
     }
   }
-  setTimeout(() => { prog.style.display='none'; progFill.style.width='0%'; }, 800);
+
+  setTimeout(() => {
+    if (prog) prog.style.display = 'none';
+    if (progFill) progFill.style.width = '0%';
+  }, 800);
   document.getElementById('RCP-file-input').value = '';
+  rReceipts();
+  // Open modal only for the first uploaded file
+  if (firstRec) openRcpModal(firstRec);
+  if (fileArr.length > 1) toast(`${fileArr.length} files uploaded`, 'Click each receipt to add details', '');
 }
 
 function openRcpModal(r) {
+  if (!r || !r.id) return;
   rcpModalId = r.id;
   rcpModalStatus = r.status || 'unpaid';
   const modal = document.getElementById('RCP-modal');
+  if (!modal) return;
+
   const img = document.getElementById('RCP-modal-img');
   const pdf = document.getElementById('RCP-modal-pdf');
-  const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
+  const ext = (r.file_url || '').split('?')[0].split('.').pop().toLowerCase();
+  const isImg = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
 
-  img.style.display = isImg ? 'block' : 'none';
-  pdf.style.display = isImg ? 'none' : 'block';
-  if (isImg) img.src = r.file_url;
-  else document.getElementById('RCP-modal-pdf-link').href = r.file_url;
+  if (img) img.style.display = isImg ? 'block' : 'none';
+  if (pdf) pdf.style.display = isImg ? 'none' : 'block';
+  if (isImg && img) img.src = r.file_url;
+  else { const lnk = document.getElementById('RCP-modal-pdf-link'); if (lnk) lnk.href = r.file_url || '#'; }
 
-  document.getElementById('RCP-modal-title').textContent = r.file_name || 'Receipt';
-  document.getElementById('RCP-modal-submitter').value = r.submitted_by || presenceName || '';
-  document.getElementById('RCP-modal-desc').value = r.description || '';
-  document.getElementById('RCP-modal-amount').value = r.amount || '';
-  document.getElementById('RCP-modal-notes').value = r.notes || '';
+  const title = document.getElementById('RCP-modal-title');
+  if (title) title.textContent = r.file_name || 'Receipt';
+  const sub = document.getElementById('RCP-modal-submitter');
+  if (sub) sub.value = r.submitted_by || presenceName || '';
+  const desc = document.getElementById('RCP-modal-desc');
+  if (desc) desc.value = r.description || '';
+  const amt = document.getElementById('RCP-modal-amount');
+  if (amt) amt.value = r.amount || '';
+  const notes = document.getElementById('RCP-modal-notes');
+  if (notes) notes.value = r.notes || '';
+  const comm = document.getElementById('RCP-modal-committee');
+  if (comm) comm.value = r.committee || '';
 
-  // Show receipt total hint if it differs from amount
+  // Show original receipt total hint if different from amount
   const rtEl = document.getElementById('RCP-modal-receipt-total');
   const rtVal = document.getElementById('RCP-modal-rt-val');
-  if (r.receipt_total && r.receipt_total !== r.amount) {
-    rtEl.style.display = 'block';
-    rtVal.textContent = '$' + Number(r.receipt_total).toFixed(2);
-  } else {
-    rtEl.style.display = 'none';
+  if (rtEl && rtVal) {
+    if (r.receipt_total && r.receipt_total !== r.amount) {
+      rtEl.style.display = 'block';
+      rtVal.textContent = '$' + Number(r.receipt_total).toFixed(2);
+    } else {
+      rtEl.style.display = 'none';
+    }
   }
   setRcpStatus(rcpModalStatus);
   modal.style.display = 'flex';
 }
 
 function closeRcpModal() {
-  document.getElementById('RCP-modal').style.display = 'none';
+  const modal = document.getElementById('RCP-modal');
+  if (modal) modal.style.display = 'none';
   rcpModalId = null;
 }
 
@@ -7579,6 +7636,7 @@ function setRcpStatus(s) {
   rcpModalStatus = s;
   const paidBtn = document.getElementById('RCP-btn-paid');
   const unpaidBtn = document.getElementById('RCP-btn-unpaid');
+  if (!paidBtn || !unpaidBtn) return;
   if (s === 'paid') {
     paidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--green2);background:var(--gl);color:var(--gt);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;';
     unpaidBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:2px solid var(--grb);background:white;color:var(--tm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;';
@@ -7590,42 +7648,54 @@ function setRcpStatus(s) {
 
 async function saveRcpModal() {
   if (!rcpModalId) return;
-  const id = rcpModalId; // capture before close nulls it
+  const id = rcpModalId; // capture BEFORE closeRcpModal nulls it
   const data = {
-    submitted_by: document.getElementById('RCP-modal-submitter').value.trim(),
-    description: document.getElementById('RCP-modal-desc').value.trim(),
-    notes: document.getElementById('RCP-modal-notes').value.trim(),
-    amount: parseFloat(document.getElementById('RCP-modal-amount').value) || null,
-    committee: document.getElementById('RCP-modal-committee').value,
+    submitted_by: (document.getElementById('RCP-modal-submitter')?.value || '').trim(),
+    description: (document.getElementById('RCP-modal-desc')?.value || '').trim(),
+    notes: (document.getElementById('RCP-modal-notes')?.value || '').trim(),
+    amount: parseFloat(document.getElementById('RCP-modal-amount')?.value) || null,
+    committee: document.getElementById('RCP-modal-committee')?.value || '',
     status: rcpModalStatus,
   };
+  // Update local state first
   const idx = simpleReceipts.findIndex(r => r.id === id);
   if (idx !== -1) simpleReceipts[idx] = { ...simpleReceipts[idx], ...data };
-  closeRcpModal();
+  closeRcpModal(); // now safe to close
   rReceipts();
-  await sb.from('simple_receipts').update(data).eq('id', id);
-  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || data.submitted_by || 'Receipt', '');
+  // Persist to DB
+  const { error } = await sb.from('simple_receipts').update(data).eq('id', id);
+  if (error) {
+    toast('Save failed', error.message, 'err');
+    return;
+  }
+  toast(data.status === 'paid' ? '✓ Marked paid' : '✓ Saved', data.description || data.submitted_by || 'Receipt', '');
 }
 
 async function deleteRcp() {
   if (!rcpModalId) return;
-  const r = simpleReceipts.find(x => x.id === rcpModalId);
-  if (!confirm(`Delete "${r?.description || 'this receipt'}"?`)) return;
-  closeRcpModal();
-  if (r?.storage_path) await sb.storage.from('leadoff-assets').remove([r.storage_path]);
-  await sb.from('simple_receipts').delete().eq('id', rcpModalId);
-  simpleReceipts = simpleReceipts.filter(x => x.id !== rcpModalId);
+  const id = rcpModalId; // capture BEFORE closeRcpModal nulls it
+  const r = simpleReceipts.find(x => x.id === id);
+  if (!confirm(`Delete "${r?.description || r?.file_name || 'this receipt'}"?`)) return;
+  closeRcpModal(); // close modal first (id is already captured)
+  // Remove from local state immediately
+  simpleReceipts = simpleReceipts.filter(x => x.id !== id);
   rReceipts();
-  toast('Receipt deleted', '', 'warn');
+  // Delete from storage
+  if (r?.storage_path) {
+    const { error: storErr } = await sb.storage.from('leadoff-assets').remove([r.storage_path]);
+    if (storErr) console.warn('Storage delete failed:', storErr.message);
+  }
+  // Delete from DB
+  const { error: dbErr } = await sb.from('simple_receipts').delete().eq('id', id);
+  if (dbErr) {
+    toast('Delete failed', dbErr.message, 'err');
+    // Restore local state if DB delete failed
+    if (r) { simpleReceipts.unshift(r); rReceipts(); }
+    return;
+  }
+  toast('Receipt deleted', r?.file_name || '', 'warn');
 }
 
-// Legacy compat — old receipt functions referenced elsewhere
-function rReceiptYears(){}
-function rReceiptSummary(){}
-function selectReceiptYear(){}
-function filterReceipts(){}
-function approveReceiptPost(){}
-function rejectReceiptPost(){}
 let receiptYear = 2026; // default to current year
 let receiptFilter = 'all';
 
