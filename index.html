@@ -2476,6 +2476,9 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   <!-- Stats -->
   <div class="att-stats" id="ATT-stats"></div>
 
+  <!-- Check-in stats -->
+  <div class="att-stats" id="ATT-ci-stats" style="margin-top:10px;"></div>
+
   <!-- Goal progress -->
   <div class="att-goal">
     <div class="att-goal-row">
@@ -2543,11 +2546,29 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
     <div class="att-cin-result" id="ATT-cin-result"></div>
   </div>
 
-  <!-- Timeslot tabs -->
-  <div class="att-tabs" id="ATT-tabs">
-    <div class="att-tab active" data-slot="all" onclick="setAttTab('all')">
-      All Attendees <span class="att-tab-badge" id="ATT-badge-all">0</span>
+  <!-- CHECKED IN row -->
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);padding:0 0 4px 2px;">Checked Into Event</div>
+  <div class="att-tabs" id="ATT-tabs-ci" style="margin-bottom:8px;">
+    <div class="att-tab active" data-slot="ci_all" onclick="setAttTab('ci_all')">
+      All Check-ins <span class="att-tab-badge" id="ATT-badge-ci_all">0</span>
     </div>
+    <div class="att-tab" data-slot="ci_jun12am" onclick="setAttTab('ci_jun12am')">
+      Jun 12 · Morning <span class="att-tab-badge" id="ATT-badge-ci_jun12am">0</span>
+    </div>
+    <div class="att-tab" data-slot="ci_jun12pm" onclick="setAttTab('ci_jun12pm')">
+      Jun 12 · Afternoon <span class="att-tab-badge" id="ATT-badge-ci_jun12pm">0</span>
+    </div>
+    <div class="att-tab" data-slot="ci_jun13am" onclick="setAttTab('ci_jun13am')">
+      Jun 13 · Morning <span class="att-tab-badge" id="ATT-badge-ci_jun13am">0</span>
+    </div>
+    <div class="att-tab" data-slot="ci_jun13pm" onclick="setAttTab('ci_jun13pm')">
+      Jun 13 · Afternoon <span class="att-tab-badge" id="ATT-badge-ci_jun13pm">0</span>
+    </div>
+  </div>
+
+  <!-- REGISTERED row -->
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tt);padding:0 0 4px 2px;margin-top:4px;">Registered Tickets</div>
+  <div class="att-tabs" id="ATT-tabs" style="margin-bottom:16px;">
     <div class="att-tab" data-slot="jun12am" onclick="setAttTab('jun12am')">
       Jun 12 · Morning <span class="att-tab-badge" id="ATT-badge-jun12am">0</span>
     </div>
@@ -2572,7 +2593,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
       <option value="checked_in">Checked in ✓</option>
     </select>
     <select class="att-filter-sel" id="ATT-filter-invite" onchange="filterAttendees()" style="min-width:200px;">
-      <option value="">Company invites — all</option>
+      <option value="">All Attendees — unique registrants</option>
       <option value="__none__">— No answer provided —</option>
       <option value="Regi Powell | PJ Morgan">Regi Powell | PJ Morgan</option>
       <option value="Will Cummings | First Priority">Will Cummings | First Priority</option>
@@ -5313,6 +5334,49 @@ function renderGoal(){
 }
 
 // ── STATS ──
+const CI_GOAL = 1000;
+
+function renderCIStats(){
+  const el = document.getElementById('ATT-ci-stats'); if(!el) return;
+  const ci = attendees.filter(a => a.checked_in || a.status==='checked_in');
+  const total = ci.length;
+  const unique = (() => {
+    const seen = new Set();
+    return ci.filter(a => { const k=(a.email||a.id||'').toLowerCase(); if(seen.has(k))return false; seen.add(k);return true; }).length;
+  })();
+  // Infer day from ticket class since most check-in timestamps are null
+  const friday = ci.filter(a => {
+    const tc = a.ticket_class||a.ticket_type||'';
+    return tc.includes('June 12') || tc === 'BOTH Days';
+  }).length;
+  const saturday = ci.filter(a => {
+    const tc = a.ticket_class||a.ticket_type||'';
+    return tc.includes('June 13') || tc === 'BOTH Days';
+  }).length;
+  const pct = Math.min(100, Math.round(total/CI_GOAL*100));
+  el.innerHTML = `
+    <div class="att-stat" style="background:linear-gradient(135deg,#1e3a5f,#0b1929);">
+      <div class="att-stat-n" style="color:white;">${total.toLocaleString()}</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.65);">Checked-in tickets</div>
+    </div>
+    <div class="att-stat blue">
+      <div class="att-stat-n">${unique.toLocaleString()}</div>
+      <div class="att-stat-l">Unique people in</div>
+    </div>
+    <div class="att-stat" style="background:#166534;color:white;">
+      <div class="att-stat-n" style="color:white;">${pct}%</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">Of ${CI_GOAL.toLocaleString()} goal</div>
+    </div>
+    <div class="att-stat" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
+      <div class="att-stat-n" style="color:white;">Fri ${friday}</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">June 12 check-ins</div>
+    </div>
+    <div class="att-stat" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">
+      <div class="att-stat-n" style="color:white;">Sat ${saturday}</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">June 13 check-ins</div>
+    </div>`;
+}
+
 function renderAttStats(){
   const activeAtts = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status));
   const total = activeAtts.length;
@@ -5367,13 +5431,17 @@ function renderSponsorLeaderboard(){
 // ── FILTER + RENDER ──
 // ── TIMESLOT TABS ──
 const ATT_SLOTS = {
-  all: { label: 'All Attendees', tickets: null, dedup: true },
-  jun12am: { label: 'Jun 12 · Morning', tickets: ['June 12th Morning / Early Afternoon','BOTH Days'], dedup: false },
-  jun12pm: { label: 'Jun 12 · Afternoon/Evening', tickets: ['June 12th Midafternoon / Evening','BOTH Days'], dedup: false },
-  jun13am: { label: 'Jun 13 · Morning', tickets: ['June 13th Morning / Early Afternoon','BOTH Days'], dedup: false },
-  jun13pm: { label: 'Jun 13 · Afternoon/Evening', tickets: ['June 13th Midafternoon / Evening','BOTH Days'], dedup: false },
+  ci_all:    { label:'All Check-ins',         tickets:null,  dedup:true,  ci:true },
+  ci_jun12am:{ label:'Jun 12 Morning CI',     tickets:['June 12th Morning / Early Afternoon','BOTH Days'], dedup:false, ci:true },
+  ci_jun12pm:{ label:'Jun 12 Afternoon CI',   tickets:['June 12th Midafternoon / Evening','BOTH Days'],   dedup:false, ci:true },
+  ci_jun13am:{ label:'Jun 13 Morning CI',     tickets:['June 13th Morning / Early Afternoon','BOTH Days'],dedup:false, ci:true },
+  ci_jun13pm:{ label:'Jun 13 Afternoon CI',   tickets:['June 13th Midafternoon / Evening','BOTH Days'],   dedup:false, ci:true },
+  jun12am:   { label:'Jun 12 · Morning',      tickets:['June 12th Morning / Early Afternoon','BOTH Days'], dedup:false, ci:false },
+  jun12pm:   { label:'Jun 12 · Afternoon',    tickets:['June 12th Midafternoon / Evening','BOTH Days'],   dedup:false, ci:false },
+  jun13am:   { label:'Jun 13 · Morning',      tickets:['June 13th Morning / Early Afternoon','BOTH Days'],dedup:false, ci:false },
+  jun13pm:   { label:'Jun 13 · Afternoon',    tickets:['June 13th Midafternoon / Evening','BOTH Days'],   dedup:false, ci:false },
 };
-let attCurrentSlot = 'all';
+let attCurrentSlot = 'ci_all';
 
 function setAttTab(slot) {
   attCurrentSlot = slot;
@@ -5385,8 +5453,12 @@ function getSlotAttendees(slot) {
   const def = ATT_SLOTS[slot]; if(!def) return [];
   let list = attendees.filter(a => !['cancelled','Cancelled','refunded','Not Attending'].includes(a.status));
 
+  // Filter to checked-in only for CI slots
+  if (def.ci) {
+    list = list.filter(a => a.checked_in || a.status === 'checked_in');
+  }
+
   if (def.tickets) {
-    // Include if: ticket exactly matches one of the slot tickets, OR ticket is BOTH Days
     list = list.filter(a => {
       const tc = a.ticket_class || a.ticket_type || '';
       return def.tickets.some(t => tc === t);
@@ -5394,7 +5466,6 @@ function getSlotAttendees(slot) {
   }
 
   if (def.dedup) {
-    // All Attendees tab: deduplicate by email for unique count
     const seen = new Set();
     list = list.filter(a => {
       const key = (a.email||a.id||'').toLowerCase();
@@ -5402,7 +5473,6 @@ function getSlotAttendees(slot) {
       seen.add(key); return true;
     });
   }
-  // Timeslot tabs: no dedup — show true headcount including duplicates across days
   return list;
 }
 
@@ -5418,7 +5488,22 @@ function filterAttendees(){
   const tk=document.getElementById('ATT-filter-ticket')?.value||'';
   const st=document.getElementById('ATT-filter-status')?.value||'';
   const inv=document.getElementById('ATT-filter-invite')?.value||'';
-  let base = getSlotAttendees(attCurrentSlot);
+  // If on a ci_ slot with no company filter, show from all attendees (deduped) for the "all" case
+  let base;
+  if(attCurrentSlot==='ci_all'){
+    // Deduped unique people (registered)
+    const ci=document.getElementById('ATT-filter-invite')?.value||'';
+    const allActive=attendees.filter(a=>!['cancelled','Cancelled','refunded','Not Attending'].includes(a.status));
+    if(ATT_SLOTS[attCurrentSlot]?.ci){
+      base=allActive.filter(a=>a.checked_in||a.status==='checked_in');
+    } else {
+      base=allActive;
+    }
+    const seen=new Set();
+    base=base.filter(a=>{const k=(a.email||a.id||'').toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
+  } else {
+    base = getSlotAttendees(attCurrentSlot);
+  }
   attFiltered = base.filter(a=>{
     const name=`${a.first_name||''} ${a.last_name||''} ${a.email||''}`.toLowerCase();
     if(q&&!name.includes(q))return false;
@@ -5442,7 +5527,7 @@ function filterAttendees(){
 }
 
 function rAttendees(){
-  renderAttStats();renderGoal();renderTrendChart();
+  renderAttStats(); renderCIStats(); renderGoal(); renderTrendChart();
   renderSponsorLeaderboard();
   updateTicketFilter(); updateTabBadges(); filterAttendees();
 }
