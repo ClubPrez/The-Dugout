@@ -1730,7 +1730,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   <div class="auth-card">
     <span class="auth-logo">⚾</span>
     <div class="auth-title">Leadoff Lounge 2026</div>
-    <div class="auth-sub">Command Center — Steering Committee Access<br>Hot Shops · Omaha · June 12–13, 2026</div>
+    <div class="auth-sub">Command Center — Steering Committee Access<br>Hot Shops · Omaha · June 18–19, 2027</div>
     <div id="AUTH-form">
       <input class="auth-input" type="email" id="AUTH-email" placeholder="Your email address" autocomplete="email">
       <button class="auth-btn" id="AUTH-btn" onclick="sendMagicLink()">Send me a login link</button>
@@ -1757,7 +1757,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
       <div class="lpill" id="LP"><span class="dot"></span><span id="LL">Connecting…</span></div>
       <div class="hstats">
         <div class="hs"><div class="hs-n" id="CD">—</div><div class="hs-l">Days out</div></div>
-        <div class="hs"><div class="hs-n">June 12–13</div><div class="hs-l">Event dates</div></div>
+        <div class="hs"><div class="hs-n">June 18–19</div><div class="hs-l">2027 dates</div></div>
         <div class="hs"><div class="hs-n" id="H-total">$0</div><div class="hs-l">Total spent</div></div>
         <div class="hs"><div class="hs-n" id="H-share">$0</div><div class="hs-l">Per sponsor</div></div>
       </div>
@@ -2121,11 +2121,11 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
 </div>
 
 <!-- Receipt detail modal -->
-<div id="RCP-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:800;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target.id==='RCP-modal')closeRcpModal()">
+<div id="RCP-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:800;align-items:center;justify-content:center;padding:20px;" onclick="">
   <div style="background:white;border-radius:16px;padding:24px;width:min(480px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.25);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-family:var(--font-condensed);font-size:20px;font-weight:700;" id="RCP-modal-title">Receipt</div>
-      <button onclick="closeRcpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tm);">✕</button>
+      <button onclick="closeRcpModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--tm);" title="Close without saving">✕</button>
     </div>
     <img id="RCP-modal-img" src="" style="width:100%;border-radius:8px;margin-bottom:14px;display:none;">
     <div id="RCP-modal-pdf" style="display:none;margin-bottom:14px;">
@@ -2149,7 +2149,7 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
         </label>
         <div style="position:relative;">
           <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:14px;">$</span>
-          <input type="number" id="RCP-modal-amount" placeholder="0.00" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px 9px 24px;font-family:var(--font);font-size:14px;outline:none;">
+          <input type="number" id="RCP-modal-amount" placeholder="Enter amount" step="0.01" style="width:100%;border:1px solid var(--grb);border-radius:8px;padding:9px 12px 9px 24px;font-family:var(--font);font-size:14px;outline:none;">
         </div>
         <div id="RCP-modal-receipt-total" style="font-size:11px;color:var(--tt);margin-top:4px;display:none;">Receipt total: <span id="RCP-modal-rt-val"></span> — adjust above if needed</div>
       </div>
@@ -2177,8 +2177,8 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
       </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeRcpModal()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="saveRcpModal()">Save</button>
+      <button class="btn btn-secondary" style="flex:0 0 auto;padding:10px 16px;font-size:13px;" onclick="closeRcpModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;font-size:15px;font-weight:700;" onclick="saveRcpModal()">Save receipt →</button>
       <button onclick="deleteRcp()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--rl);background:var(--rl);color:var(--rt);cursor:pointer;font-family:var(--font);font-size:13px;">Delete</button>
     </div>
   </div>
@@ -4710,8 +4710,8 @@ let shifts=[];
 let clockInterval=null;
 let tvMode=false;
 
-const EVENT_START=new Date('2026-06-12T11:00:00-05:00');
-const EVENT_END  =new Date('2026-06-13T18:00:00-05:00');
+const EVENT_START=new Date('2027-06-18T11:00:00-05:00');
+const EVENT_END  =new Date('2027-06-19T18:00:00-05:00');
 const SETUP_DAY  =new Date('2026-06-11T00:00:00-05:00');
 
 const SEED_SHIFTS=[
@@ -4792,7 +4792,7 @@ function tickClock(){
     phaseEl.className='ed-phase';phaseEl.textContent='Countdown to Leadoff Lounge';
     if(d>7){
       clockEl.innerHTML=`<div class="ed-unit"><div class="ed-num">${d}</div><div class="ed-lbl">days</div></div>`;
-      headEl.textContent='June 12–13, 2026 · Hot Shops · Omaha';
+      headEl.textContent='June 18–19, 2027 · Hot Shops · Omaha';
     } else {
       clockEl.innerHTML=clockUnit(d,'days')+sepEl()+clockUnit(h,'hours')+sepEl()+clockUnit(m,'min')+sepEl()+clockUnit(s,'sec');
       headEl.textContent=`Until ${info.next?.name||'event opens'} — ${new Date(info.next?.start_dt||EVENT_START).toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}`;
@@ -7296,19 +7296,51 @@ function rRcpSummary() {
   const unpaid = all.filter(r => r.status !== 'paid');
   const totalPaid = paid.reduce((s, r) => s + Number(r.amount || 0), 0);
   const totalUnpaid = unpaid.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const hasAmounts = all.some(r => r.amount);
+
+  // Detect duplicates — same file_name OR same file_size
+  const dupIds = getRcpDuplicateIds();
+
   el.innerHTML = `
     <div style="background:var(--gl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--gt);">${fmt$(totalPaid)}</div>
-      <div style="font-size:11px;color:var(--gt);text-transform:uppercase;letter-spacing:.06em;">Paid · ${paid.length} receipt${paid.length!==1?'s':''}</div>
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--gt);">${hasAmounts?fmt$(totalPaid):paid.length}</div>
+      <div style="font-size:11px;color:var(--gt);text-transform:uppercase;letter-spacing:.06em;">Paid${hasAmounts?' total':' receipts'}</div>
     </div>
     <div style="background:var(--rl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--rt);">${fmt$(totalUnpaid)}</div>
-      <div style="font-size:11px;color:var(--rt);text-transform:uppercase;letter-spacing:.06em;">Unpaid · ${unpaid.length} receipt${unpaid.length!==1?'s':''}</div>
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--rt);">${hasAmounts?fmt$(totalUnpaid):unpaid.length}</div>
+      <div style="font-size:11px;color:var(--rt);text-transform:uppercase;letter-spacing:.06em;">Unpaid${hasAmounts?' total':' receipts'}</div>
     </div>
     <div style="background:var(--bl);border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
-      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--bt);">${fmt$(totalPaid + totalUnpaid)}</div>
-      <div style="font-size:11px;color:var(--bt);text-transform:uppercase;letter-spacing:.06em;">Total · ${all.length} receipts</div>
-    </div>`;
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:var(--bt);">${hasAmounts?fmt$(totalPaid+totalUnpaid):all.length}</div>
+      <div style="font-size:11px;color:var(--bt);text-transform:uppercase;letter-spacing:.06em;">${hasAmounts?'Total amount':'Total receipts'}</div>
+    </div>
+    ${dupIds.size > 0 ? `<div style="background:#fff7ed;border:1px solid #f97316;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;">
+      <div style="font-family:var(--font-condensed);font-size:24px;font-weight:700;color:#c2410c;">${dupIds.size}</div>
+      <div style="font-size:11px;color:#c2410c;text-transform:uppercase;letter-spacing:.06em;">⚠ Possible duplicates</div>
+    </div>` : ''}`;
+}
+
+function getRcpDuplicateIds() {
+  const dupIds = new Set();
+  const nameMap = {};
+  const sizeMap = {};
+  simpleReceipts.forEach(r => {
+    // Group by file name (excluding timestamp prefix)
+    const baseName = r.file_name || '';
+    if (baseName) {
+      if (!nameMap[baseName]) nameMap[baseName] = [];
+      nameMap[baseName].push(r.id);
+    }
+    // Group by file size (only flag if size > 10KB to avoid false positives on tiny files)
+    if (r.file_size && r.file_size > 10000) {
+      if (!sizeMap[r.file_size]) sizeMap[r.file_size] = [];
+      sizeMap[r.file_size].push(r.id);
+    }
+  });
+  // Mark all IDs that share a name or size with another receipt
+  Object.values(nameMap).forEach(ids => { if (ids.length > 1) ids.forEach(id => dupIds.add(id)); });
+  Object.values(sizeMap).forEach(ids => { if (ids.length > 1) ids.forEach(id => dupIds.add(id)); });
+  return dupIds;
 }
 
 function filterRcp(f) {
@@ -7331,12 +7363,20 @@ function rRcpGrid() {
     return;
   }
 
+  const dupIds = getRcpDuplicateIds();
+
   grid.innerHTML = '';
   filtered.forEach(r => {
     const isPaid = r.status === 'paid';
+    const isDup = dupIds.has(r.id);
     const isImg = r.file_url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
     const card = document.createElement('div');
-    card.style.cssText = `background:white;border:2px solid ${isPaid?'var(--green2)':'var(--red)'};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;`;
+
+    // Border: orange for duplicate, green for paid, red for unpaid
+    const borderColor = isDup ? '#f97316' : isPaid ? 'var(--green2)' : 'var(--red)';
+    const bgColor = isDup ? '#fff7ed' : 'white';
+
+    card.style.cssText = `background:${bgColor};border:2px solid ${borderColor};border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;`;
     card.onmouseover = () => card.style.transform = 'translateY(-2px)';
     card.onmouseout = () => card.style.transform = '';
     card.onclick = () => openRcpModal(r);
@@ -7344,13 +7384,14 @@ function rRcpGrid() {
       <div style="height:140px;background:var(--grl);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">
         ${isImg ? `<img src="${esc(r.file_url)}" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:48px;">📄</span>`}
         <div style="position:absolute;top:8px;right:8px;background:${isPaid?'var(--green2)':'var(--red)'};color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">${isPaid?'PAID':'UNPAID'}</div>
+        ${isDup ? `<div style="position:absolute;top:8px;left:8px;background:#f97316;color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">⚠ DUPLICATE?</div>` : ''}
       </div>
       <div style="padding:10px 12px;">
-        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description||'Receipt')}</div>
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.description||r.file_name||'Receipt')}</div>
         ${r.notes?`<div style="font-size:11px;color:var(--tm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.notes)}</div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
           <div style="font-size:11px;color:var(--tm);">${esc(r.submitted_by||r.committee?.toUpperCase()||'—')}</div>
-          <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;">${r.amount?fmt$(r.amount):'—'}</div>
+          <div style="font-family:var(--font-condensed);font-size:16px;font-weight:700;color:${r.amount?'var(--text)':'var(--tt)'};">${r.amount?fmt$(r.amount):'No amount'}</div>
         </div>
       </div>`;
     grid.appendChild(card);
@@ -7454,6 +7495,7 @@ function setRcpStatus(s) {
 
 async function saveRcpModal() {
   if (!rcpModalId) return;
+  const id = rcpModalId; // capture before close nulls it
   const data = {
     submitted_by: document.getElementById('RCP-modal-submitter').value.trim(),
     description: document.getElementById('RCP-modal-desc').value.trim(),
@@ -7462,11 +7504,12 @@ async function saveRcpModal() {
     committee: document.getElementById('RCP-modal-committee').value,
     status: rcpModalStatus,
   };
+  const idx = simpleReceipts.findIndex(r => r.id === id);
+  if (idx !== -1) simpleReceipts[idx] = { ...simpleReceipts[idx], ...data };
   closeRcpModal();
-  const idx = simpleReceipts.findIndex(r => r.id === rcpModalId);
-  if (idx !== -1) { simpleReceipts[idx] = { ...simpleReceipts[idx], ...data }; rReceipts(); }
-  await sb.from('simple_receipts').update(data).eq('id', rcpModalId);
-  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || '', '');
+  rReceipts();
+  await sb.from('simple_receipts').update(data).eq('id', id);
+  toast(data.status === 'paid' ? '✓ Marked paid' : 'Saved', data.description || data.submitted_by || 'Receipt', '');
 }
 
 async function deleteRcp() {
