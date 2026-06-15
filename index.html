@@ -2490,8 +2490,6 @@ body::after{content:'';position:fixed;inset:0;z-index:-1;
   <!-- Stats -->
   <div class="att-stats" id="ATT-stats"></div>
 
-  <!-- Check-in stats -->
-  <div class="att-stats" id="ATT-ci-stats" style="margin-top:10px;"></div>
 
   <!-- Goal progress -->
   <div class="att-goal">
@@ -5358,47 +5356,43 @@ function renderGoal(){
   });
 }
 
-// ── STATS ──
+// ── STATS (single unified row) ──
 const CI_GOAL = 1000;
 
-function renderCIStats(){
-  const el = document.getElementById('ATT-ci-stats'); if(!el) return;
-  const ci = attendees.filter(a => a.checked_in || a.status==='checked_in');
-  const total = ci.length;
-  const unique = (() => {
+function renderCIStats(){} // merged into renderAttStats
+
+function renderAttStats(){
+  const el = document.getElementById('ATT-stats'); if(!el) return;
+  const active = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status));
+  const totalTickets = active.length;
+  const ci = active.filter(a => a.checked_in || a.status==='checked_in');
+  const uniqueIn = (() => {
     const seen = new Set();
     return ci.filter(a => { const k=(a.email||a.id||'').toLowerCase(); if(seen.has(k))return false; seen.add(k);return true; }).length;
   })();
-  // Infer day from ticket class since most check-in timestamps are null
-  const friday = ci.filter(a => {
-    const tc = a.ticket_class||a.ticket_type||'';
-    return tc.includes('June 12') || tc === 'BOTH Days';
-  }).length;
-  const saturday = ci.filter(a => {
-    const tc = a.ticket_class||a.ticket_type||'';
-    return tc.includes('June 13') || tc === 'BOTH Days';
-  }).length;
-  const pct = Math.min(100, Math.round(total/CI_GOAL*100));
+  const ciPct = Math.min(100, Math.round(uniqueIn/CI_GOAL*100));
+  const friday = ci.filter(a => { const tc=a.ticket_class||a.ticket_type||''; return tc.includes('June 12')||tc==='BOTH Days'; }).length;
+  const saturday = ci.filter(a => { const tc=a.ticket_class||a.ticket_type||''; return tc.includes('June 13')||tc==='BOTH Days'; }).length;
   el.innerHTML = `
-    <div class="att-stat" style="background:linear-gradient(135deg,#1e3a5f,#0b1929);">
-      <div class="att-stat-n" style="color:white;">${total.toLocaleString()}</div>
-      <div class="att-stat-l" style="color:rgba(255,255,255,.65);">Checked-in tickets</div>
+    <div class="att-stat">
+      <div class="att-stat-n">${totalTickets.toLocaleString()}</div>
+      <div class="att-stat-l">Total tickets sold</div>
     </div>
     <div class="att-stat blue">
-      <div class="att-stat-n">${unique.toLocaleString()}</div>
-      <div class="att-stat-l">Unique people in</div>
+      <div class="att-stat-n">${uniqueIn.toLocaleString()}</div>
+      <div class="att-stat-l">Unique people checked in</div>
     </div>
-    <div class="att-stat" style="background:#166534;color:white;">
-      <div class="att-stat-n" style="color:white;">${pct}%</div>
-      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">Of ${CI_GOAL.toLocaleString()} goal</div>
+    <div class="att-stat green">
+      <div class="att-stat-n">${ciPct}%</div>
+      <div class="att-stat-l">Of 1,000 goal</div>
     </div>
     <div class="att-stat" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
-      <div class="att-stat-n" style="color:white;">Fri ${friday}</div>
-      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">June 12 check-ins</div>
+      <div class="att-stat-n" style="color:white;">${friday}</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">Jun 12 check-ins</div>
     </div>
     <div class="att-stat" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">
-      <div class="att-stat-n" style="color:white;">Sat ${saturday}</div>
-      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">June 13 check-ins</div>
+      <div class="att-stat-n" style="color:white;">${saturday}</div>
+      <div class="att-stat-l" style="color:rgba(255,255,255,.7);">Jun 13 check-ins</div>
     </div>`;
 }
 
@@ -5410,27 +5404,6 @@ function toggleAttAccordion(head) {
   if(open) renderTrendChart();
 }
 
-function renderAttStats(){
-  const activeAtts = attendees.filter(a=>!['cancelled','Cancelled','Not Attending'].includes(a.status));
-  const total = activeAtts.length;
-  const unique = (() => {
-    const seen = new Set();
-    return activeAtts.filter(a => {
-      const key=(a.email||a.id||'').toLowerCase();
-      if(seen.has(key))return false;
-      seen.add(key);return true;
-    }).length;
-  })();
-  const checkedIn = attendees.filter(a=>a.checked_in||a.status==='checked_in').length;
-  const pct = Math.min(Math.round(total/ATT_GOAL*100), 100);
-  const el = document.getElementById('ATT-stats');
-  if(!el) return;
-  el.innerHTML=`
-    <div class="att-stat"><div class="att-stat-n">${total.toLocaleString()}</div><div class="att-stat-l">Total tickets</div></div>
-    <div class="att-stat blue"><div class="att-stat-n">${unique.toLocaleString()}</div><div class="att-stat-l">Unique people</div></div>
-    <div class="att-stat green"><div class="att-stat-n">${pct}%</div><div class="att-stat-l">Of ${ATT_GOAL.toLocaleString()} goal</div></div>
-    <div class="att-stat amber"><div class="att-stat-n">${checkedIn}</div><div class="att-stat-l">Checked in</div></div>`;
-}
 
 // ── SPONSOR LEADERBOARD ──
 function renderSponsorLeaderboard(){
@@ -7590,55 +7563,6 @@ function filterReceipts(f) {
   rReceipts();
 }
 
-function rReceipts() {
-  const hist = document.getElementById('RH'); if (!hist) return;
-
-  // Filter by year first, then status
-  const yearFiltered = receipts.filter(r => getReceiptYear(r) === receiptYear);
-  const filtered = receiptFilter==='all'
-    ? yearFiltered
-    : yearFiltered.filter(r => (r.status||'pending') === receiptFilter);
-
-  if (!filtered.length) {
-    const isCurrentYear = receiptYear === new Date().getFullYear();
-    hist.innerHTML = `<div style="text-align:center;padding:32px 20px;color:var(--tm);">
-      <div style="font-size:36px;margin-bottom:10px;">🧾</div>
-      <div style="font-size:15px;font-weight:500;margin-bottom:6px;">
-        ${receiptFilter!=='all' ? `No ${receiptFilter} receipts in ${receiptYear}` : `No receipts in ${receiptYear}`}
-      </div>
-      ${isCurrentYear&&receiptFilter==='all'?`<div style="font-size:13px;">Upload your first 2026 receipt using the camera above.</div>`:''}
-    </div>`;
-    return;
-  }
-
-  hist.innerHTML = '';
-  [...filtered].sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).forEach(r => {
-    const sp = sponsors.find(s=>s.id===r.sponsor_id);
-    const ri = receiptItems.filter(i=>i.receipt_id===r.id);
-    const status = r.status || 'pending';
-    const div = document.createElement('div');
-    div.className = `receipt-row ${status==='pending'?'pending-approval':status}`;
-    div.dataset.id = r.id;
-    const col = sp ? avc(sp.name) : '#374151';
-    const ini = sp ? initials(sp.name) : '?';
-    div.innerHTML = `
-      <div class="receipt-row-thumb" style="background:${col};display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:white;">${ini}</div>
-      <div class="receipt-row-info">
-        <div class="receipt-row-vendor">${esc(r.vendor||'Unknown vendor')}</div>
-        <div class="receipt-row-meta">${r.receipt_date||'No date'} · ${sp?esc(sp.name):'Unknown'} · ${ri.length} items</div>
-        ${r.approval_note?`<div class="receipt-approval-note">${esc(r.approval_note)}</div>`:''}
-        ${status==='pending'?`<div class="rr-actions">
-          <button class="rr-action-btn rr-approve" onclick="approveReceiptPost('${r.id}')">✓ Approve</button>
-          <button class="rr-action-btn rr-reject" onclick="rejectReceiptPost('${r.id}')">✗ Reject</button>
-        </div>`:''}
-      </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div class="receipt-row-amt">${fmt$(r.total_amount)}</div>
-        <div class="receipt-row-status rs-${status}" style="margin-top:3px;">${status}</div>
-      </div>`;
-    hist.appendChild(div);
-  });
-}
 
 async function approveReceiptPost(id) {
   const r = receipts.find(x=>x.id===id); if (!r) return;
@@ -8790,7 +8714,7 @@ async function init(){
   projects=pjd||[];projectItems=pid||[];projectUpdates=pud||[];
   meetings=mtgd||[];meetingTasks=mtkd||[];
   surveys=survd||[];surveyQuestions=sqd||[];surveyResponses=srd||[];
-  milestones=msd||[];decisionMap=dmd||[];commsTouchpoints=ctd||[];campaigns=cpd||[];vendors=vnd||[];vendorRatings=vrd||[];vendorQuotes=vqd||[];
+  milestones=msd||[];decisionMap=dmd||[];simpleReceipts=srcd||[];commsTouchpoints=ctd||[];campaigns=cpd||[];vendors=vnd||[];vendorRatings=vrd||[];vendorQuotes=vqd||[];
 
   if(!items.length&&!resps.length)await seedInv();
   if(!budgetAreas.length)await seedBudget();
