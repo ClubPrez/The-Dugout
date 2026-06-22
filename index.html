@@ -7370,8 +7370,17 @@ let rcpModalStatus = 'unpaid';
 let simpleReceipts = [];
 
 async function loadSimpleReceipts() {
-  const { data } = await sb.from('simple_receipts').select('*').order('created_at', { ascending: false });
-  if (data) { simpleReceipts = data; rReceipts(); }
+  try {
+    const { data, error } = await sb.from('simple_receipts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    simpleReceipts = data || [];
+  } catch(e) {
+    console.error('loadSimpleReceipts failed:', e.message);
+    simpleReceipts = simpleReceipts || [];
+  }
+  rReceipts();
 }
 
 function rReceipts() {
@@ -7519,10 +7528,8 @@ async function uploadReceipts(files) {
 
       if (insErr) throw new Error(insErr.message);
       if (progFill) progFill.style.width = '100%';
-
       if (rec) {
-        simpleReceipts.unshift(rec);
-        if (!firstRec) firstRec = rec; // only open modal for first file
+        if (!firstRec) firstRec = rec;
       }
     } catch(e) {
       toast('Upload failed', `${file.name}: ${e.message || 'Try again'}`, 'err');
@@ -7534,9 +7541,16 @@ async function uploadReceipts(files) {
     if (progFill) progFill.style.width = '0%';
   }, 800);
   document.getElementById('RCP-file-input').value = '';
-  rReceipts();
+
+  // Always reload from DB to ensure we have the latest state
+  await loadSimpleReceipts();
+
   // Open modal only for the first uploaded file
-  if (firstRec) openRcpModal(firstRec);
+  if (firstRec) {
+    // Re-find the record from freshly loaded data to ensure we have the DB version
+    const freshRec = simpleReceipts.find(r => r.id === firstRec.id) || firstRec;
+    openRcpModal(freshRec);
+  }
   if (fileArr.length > 1) toast(`${fileArr.length} files uploaded`, 'Click each receipt to add details', '');
 }
 
@@ -8707,7 +8721,7 @@ function gp(id){
   currentPage=PANEL_NAMES[id]||id;
   if(id==='eventday'){fetchWeather();rMilestones();}
   if(id==='assets'){rFolders();rAssets();}
-  if(id==='receipts'){rReceiptYears();rReceipts();}
+  if(id==='receipts'){loadSimpleReceipts();}
   if(id==='decision-map'){rDecisionMap();}
   if(id==='meetings'){loadProfiles();}
   if(presenceChannel&&presenceName){
